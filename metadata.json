@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: AccoBot - Trợ lý Kế toán",
+  "description": "Tự động trích xuất thông tin hóa đơn ảnh và PDF, xác nhận và xuất Excel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
