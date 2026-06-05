@@ -165,17 +165,17 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
 
       <div 
         {...getRootProps()} 
-        className={`border-2 border-dashed rounded-3xl p-16 text-center transition-all cursor-pointer group shadow-sm
+        className={`border-2 border-dashed rounded-3xl p-8 md:p-16 text-center transition-all cursor-pointer group shadow-sm
           ${isDragActive ? 'border-primary-500 bg-primary-50 ring-4 ring-primary-500/10' : 'border-gray-200 hover:border-primary-400 bg-white hover:shadow-md'}`}
       >
         <input {...getInputProps()} capture="environment" />
         <div className="mx-auto flex justify-center mb-5 text-primary-500 bg-primary-50 w-20 h-20 rounded-2xl items-center group-hover:scale-110 transition-transform duration-300 shadow-sm border border-primary-100">
           <UploadCloud size={36} strokeWidth={2} />
         </div>
-        <p className="text-xl font-display font-semibold text-gray-800 mb-2">
+        <p className="text-lg md:text-xl font-display font-semibold text-gray-800 mb-2">
           Kéo thả hoặc click để chọn file
         </p>
-        <p className="text-base text-gray-500">
+        <p className="text-sm md:text-base text-gray-500 px-4 md:px-0">
           Hỗ trợ ảnh chụp điện thoại rõ nét, hóa đơn PDF (Tối đa 4MB)
         </p>
       </div>
@@ -214,11 +214,11 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
             ))}
           </div>
 
-          <div className="flex justify-end border-t border-gray-100 pt-5">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 border-t border-gray-100 pt-5">
             <button
               onClick={processFiles}
               disabled={isProcessing}
-              className="px-8 py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-md shadow-primary-500/20 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 shadow-md shadow-primary-500/20 text-white rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2 hover:-translate-y-0.5 active:translate-y-0"
             >
               {isProcessing ? (
                 <>

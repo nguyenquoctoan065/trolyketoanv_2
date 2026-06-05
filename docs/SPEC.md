@@ -8,7 +8,7 @@ Kế toán viên làm việc trong các doanh nghiệp vừa và nhỏ, những 
 
 ## 🚀 Các Tính năng cốt lõi & Quy trình
 1. **Tải lên / Thu thập hình ảnh**: Kéo và thả file, hoặc chọn nhiều hóa đơn cùng một lúc (hỗ trợ JPG, PNG, HEIC, PDF).
-2. **Trích xuất thông minh (OCR)**: Tự động trích xuất 12 trường thông tin cốt lõi thông qua API Claude Vision.
+2. **Trích xuất thông minh (OCR)**: Tự động trích xuất 12 trường thông tin cốt lõi thông qua API **Gemini 2.5 Flash**.
 3. **Kiểm tra & Chỉnh sửa**: Giao diện hiển thị song song (Hình ảnh đối chiếu Dữ liệu trích xuất) kèm theo điểm độ tin cậy để hỗ trợ xác minh thủ công nhanh chóng.
 4. **Quản lý Dữ liệu**: Hiển thị bảng tổng hợp toàn bộ hóa đơn đi kèm các công cụ lọc, tìm kiếm nâng cao và phân trang.
 5. **Insights / Báo cáo**: Bảng điều khiển (Dashboard) với các số liệu và biểu đồ trực quan như tổng quan tài chính, tình hình ngân sách.
@@ -28,11 +28,3 @@ Kế toán viên làm việc trong các doanh nghiệp vừa và nhỏ, những 
 - Tiền thuế VAT (VAT amount)
 - Tổng cộng thanh toán (Total Amount)
 - Ghi chú (Notes - nếu có)
-
-Mỗi trường dữ liệu sẽ trả về kết hợp với một mức độ `confidence` (độ chuẩn xác do AI dự đoán) để hiển thị huy hiệu trực quan (Màu xanh lá > 90%, Vàng 60-89%, Đỏ < 60%). Qua đó cảnh báo người dùng những điểm dữ liệu nào cần được xem xét và rà soát thủ công kỹ càng.
-
-## 🛠 Yêu cầu Hệ thống / Chức năng nền tảng
-- Cảnh báo phát hiện hóa đơn trùng lặp, nhằm hạn chế chồng chéo chi tiêu.
-- Thông báo cảnh báo chủ động khi tổng số chi tiêu sắp tiến gần các ngưỡng ngân sách (ví dụ: >80%, >100%).
-- Ưu tiên lưu trữ Offline-first: Sử dụng bộ nhớ cục bộ (localStorage) để ngăn ngừa hiện tượng mất mát dữ liệu do kết nối gián đoạn.
-- Cho phép thao tác hàng loạt & lên lịch hàng đợi xử lý đa luồng (Async) trong giai đoạn chẩn đoán OCR.

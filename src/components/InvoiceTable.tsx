@@ -99,7 +99,7 @@ export default function InvoiceTable() {
 
   const handleExportPDF = async () => {
     if (filteredInvoices.length === 0) return;
-    toast.success('Đang tạo báo cáo PDF chuyên nghiệp...', { duration: 4000 });
+    toast.success('Đang tạo báo cáo PDF chuyên nghiệp...');
     
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -220,7 +220,7 @@ export default function InvoiceTable() {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="p-6 border-b border-gray-100 flex flex-col xl:flex-row xl:items-start justify-between gap-4">
+      <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col xl:flex-row xl:items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-display font-semibold text-gray-800">Khám phá dữ liệu</h2>
           <p className="text-sm text-gray-500 mt-1">Đang hiển thị {filteredInvoices.length} hóa đơn từ kho lưu trữ</p>
@@ -362,9 +362,9 @@ export default function InvoiceTable() {
       </div>
       
       {/* Footer totals */}
-      <div className="bg-gray-50/80 border-t border-gray-100 p-5 pl-6 flex justify-between items-center rounded-b-2xl">
+      <div className="bg-gray-50/80 border-t border-gray-100 p-4 sm:p-5 sm:pl-6 flex flex-col sm:flex-row justify-between items-center rounded-b-2xl gap-3">
          <span className="text-sm text-gray-500 font-medium hidden sm:inline-block">Dữ liệu được làm mới từ Bộ lọc hiện tại</span>
-         <div className="text-right flex flex-wrap items-center justify-end gap-3 w-full sm:w-auto">
+         <div className="text-right flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
             <span className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Tổng hiển thị:</span>
             <span className="text-xl font-display font-bold text-primary-600 bg-white px-4 py-1.5 rounded-lg border border-primary-100 shadow-sm whitespace-nowrap">
               {formatMoney(filteredInvoices.reduce((acc, curr) => acc + (curr.total?.value || 0), 0))} VNĐ

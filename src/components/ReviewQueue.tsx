@@ -84,9 +84,9 @@ export default function ReviewQueue() {
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0 h-[calc(100vh-220px)]">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0 lg:h-[calc(100vh-220px)]">
         {/* Left: Document View */}
-        <div className="bg-gray-200/60 rounded-2xl overflow-auto border border-gray-200 shadow-inner p-4 flex justify-center items-start h-full relative group">
+        <div className="bg-gray-200/60 rounded-2xl overflow-auto border border-gray-200 shadow-inner p-2 lg:p-4 flex justify-center items-start h-[400px] lg:h-full relative group">
           <div className="bg-white p-2 shadow-md relative w-full h-full rounded-xl flex items-center justify-center overflow-hidden transition-all duration-300">
             {currentInvoice.original_file_url ? (
               currentInvoice.original_file_name.endsWith('.pdf') ? (
@@ -117,7 +117,7 @@ export default function ReviewQueue() {
 
           <div className="space-y-6">
             <h3 className="text-lg font-semibold border-b border-gray-100 pb-3 text-gray-800">1. Thông tin chung</h3>
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <FieldInput 
                 label="Số hóa đơn" 
                 field={currentInvoice.invoice_number} 
@@ -144,7 +144,7 @@ export default function ReviewQueue() {
             </div>
 
             <h3 className="text-lg font-semibold border-b border-gray-100 pb-3 mt-10 text-gray-800">2. Số liệu thành tiền</h3>
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <FieldInput 
                 label="Tổng trước thuế" 
                 field={currentInvoice.subtotal} 
@@ -177,16 +177,16 @@ export default function ReviewQueue() {
             {currentInvoice.items && currentInvoice.items.length > 0 ? (
               <div className="space-y-4">
                 {currentInvoice.items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-4 p-4 bg-gray-50 border border-gray-100 rounded-xl relative hover:border-gray-200 transition-colors">
+                  <div key={index} className="grid grid-cols-12 gap-4 p-4 bg-gray-50 border border-gray-100 rounded-xl relative hover:border-gray-200 transition-colors mt-4">
                     <span className="absolute -left-2 -top-2 bg-gray-800 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold shadow-md">{index+1}</span>
-                    <div className="col-span-12 md:col-span-6">
+                    <div className="col-span-12 lg:col-span-6">
                        <FieldInput 
                           label="Mô tả danh mục" 
                           field={item.description} 
                           onChange={(val) => handleUpdateItem(index, 'description', val)} 
                         />
                     </div>
-                    <div className="col-span-4 md:col-span-2">
+                    <div className="col-span-4 lg:col-span-2">
                        <FieldInput 
                           label="Số lượng" 
                           field={item.quantity} 
@@ -194,7 +194,7 @@ export default function ReviewQueue() {
                           onChange={(val) => handleUpdateItem(index, 'quantity', parseFloat(val))} 
                         />
                     </div>
-                    <div className="col-span-4 md:col-span-2">
+                    <div className="col-span-8 lg:col-span-2">
                        <FieldInput 
                           label="Đơn giá" 
                           field={item.unit_price} 
@@ -202,7 +202,7 @@ export default function ReviewQueue() {
                           onChange={(val) => handleUpdateItem(index, 'unit_price', parseFloat(val))} 
                         />
                     </div>
-                    <div className="col-span-4 md:col-span-2">
+                    <div className="col-span-12 lg:col-span-2">
                        <FieldInput 
                           label="Thành tiền" 
                           field={item.amount} 
@@ -226,7 +226,7 @@ export default function ReviewQueue() {
             </div>
           </div>
           
-          <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-5 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] flex justify-between gap-4">
+          <div className="sticky bottom-0 lg:absolute lg:bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-5 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] flex flex-col sm:flex-row justify-between gap-4 mt-8 lg:mt-0 z-10">
              <button 
                 onClick={() => handleStatusChange('rejected')}
                 className="flex flex-1 items-center justify-center gap-2 px-4 py-3.5 rounded-xl font-semibold text-red-600 bg-red-50/50 border border-red-100 hover:bg-red-50 hover:border-red-200 transition-all active:scale-95"
