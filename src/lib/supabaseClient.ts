@@ -7,4 +7,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn("Supabase URL or Anon Key is missing. Please check your .env file.");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Use placeholder values during build/prerender to prevent initialization crashes if env variables are not set yet
+const finalUrl = supabaseUrl || 'https://placeholder-project.supabase.co';
+const finalKey = supabaseAnonKey || 'placeholder-anon-key';
+
+export const supabase = createClient(finalUrl, finalKey);

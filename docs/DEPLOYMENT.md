@@ -65,3 +65,21 @@ Sau khi deploy xong, Vercel sẽ cấp cho bạn một tên miền miễn phí (
 Vercel được tích hợp sẵn hệ thống Tích hợp và Triển khai tự động (CI/CD). Sau này, mỗi khi bạn thay đổi code ở máy tính cá nhân:
 1. Bạn chỉ cần thực hiện `git add`, `git commit` và `git push` lên GitHub.
 2. Vercel sẽ tự động phát hiện thay đổi và tiến hành build, deploy phiên bản mới lên internet trong vòng 1 phút mà bạn không cần phải làm lại bất kỳ thao tác thủ công nào trên website Vercel nữa.
+
+---
+
+## 🛠️ Xử lý sự cố thường gặp (Troubleshooting)
+
+### Lỗi: `No Output Directory named "dist" found after the Build completed`
+
+**Nguyên nhân:**
+Lỗi này xảy ra khi bạn deploy đè lên một Project Vercel cũ đã được cấu hình cho **Vite / React** trước đó. Vercel vẫn giữ cài đặt cũ và tìm kiếm thư mục đầu ra là `dist`, trong khi **Next.js** xuất dữ liệu ra thư mục `.next`.
+
+**Cách khắc phục:**
+1. Truy cập vào **Vercel Dashboard**.
+2. Chọn dự án của bạn -> Chuyển sang tab **Settings** (ở trên cùng).
+3. Chọn mục **Build & Development Settings** ở menu bên trái.
+4. Tại phần **Framework Preset**, đổi từ `Vite` (hoặc `Other`) thành **`Next.js`**.
+5. Ở phần **Build Command** và **Output Directory**, hãy đảm bảo nút gạt **Override** đang tắt (để Vercel tự động sử dụng mặc định của Next.js). Nếu nút đang bật, hãy tắt đi hoặc bấm **Reset**.
+6. Nhấn **Save** để lưu lại.
+7. Quay lại tab **Deployments**, chọn bản deploy bị lỗi mới nhất, bấm vào nút 3 chấm bên phải -> Chọn **Redeploy** (hoặc thực hiện push một commit mới lên GitHub) để Vercel build lại.
