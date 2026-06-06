@@ -4,14 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useAppStore } from '../store';
-import { Upload, FileText, CheckCircle, BarChart3, ChevronRight, X, HelpCircle, UserX, Menu } from 'lucide-react';
+import { Upload, FileText, CheckCircle, BarChart3, ChevronRight, X, HelpCircle, UserX, Menu, LogOut, Loader2 } from 'lucide-react';
 import UploadSection from '../components/UploadSection';
 import ReviewQueue from '../components/ReviewQueue';
 import InvoiceTable from '../components/InvoiceTable';
 import DashboardStats from '../components/DashboardStats';
 import HelpFAQ from '../components/HelpFAQ';
+import AuthScreen from '../components/AuthScreen';
 import { ToastContainer, toast } from '../components/Toast';
 
 function WelcomeModal({ onClose }: { onClose: () => void }) {
@@ -58,7 +59,7 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
   const steps = [
     {
        title: 'Chào mừng đến AccoBot',
-       desc: 'Tự động trích xuất thông margin hóa đơn (ảnh/PDF) chỉ trong vài giây. Lưu trữ và xuất Excel dễ dàng.',
+       desc: 'Tự động trích xuất thông tin hóa đơn (ảnh/PDF) chỉ trong vài giây. Lưu trữ và xuất Excel dễ dàng.',
        icon: <Upload className="w-14 h-14 text-primary-500 mb-6 drop-shadow-sm" strokeWidth={1.5} />
     },
     {
@@ -149,11 +150,13 @@ function AppContent() {
   const pendingCount = state.invoices.filter(i => i.status === 'pending_review').length;
 
   useEffect(() => {
-    const isFirstVisit = !localStorage.getItem('accobot_onboarding_completed');
-    if (isFirstVisit) {
-       setShowWelcome(true);
+    if (state.user) {
+      const isFirstVisit = !localStorage.getItem('accobot_onboarding_completed');
+      if (isFirstVisit) {
+         setShowWelcome(true);
+      }
     }
-  }, []);
+  }, [state.user]);
 
   const handleCloseWelcome = () => {
      localStorage.setItem('accobot_onboarding_completed', 'true');
@@ -164,6 +167,22 @@ function AppContent() {
     setActiveTab(tab);
     setIsMobileMenuOpen(false);
   };
+
+  // 1. Session check: loading spinner
+  if (state.authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 relative font-sans">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat opacity-[0.02] pointer-events-none" />
+        <Loader2 className="animate-spin text-primary-600 mb-4" size={40} />
+        <p className="text-gray-500 font-medium text-sm">Đang tải phiên làm việc...</p>
+      </div>
+    );
+  }
+
+  // 2. Session check: show login screen if not logged in
+  if (!state.user) {
+    return <AuthScreen onAuthSuccess={() => {}} />;
+  }
 
   return (
     <div className="min-h-screen flex bg-[#f8fafc] font-sans">
@@ -216,20 +235,42 @@ function AppContent() {
             isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} 
           />
 
-          <div className="mt-auto pt-6 flex flex-col gap-1.5">
+          <div className="mt-auto pt-6 flex flex-col gap-2 border-t border-gray-800">
+            {/* User Profile Card */}
+            <div className="px-4 py-3 bg-white/5 rounded-xl border border-white/5 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary-600/20 text-primary-400 font-bold flex items-center justify-center text-sm uppercase">
+                {state.user?.email?.charAt(0) || 'U'}
+              </div>
+              <div className="truncate flex-1">
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Tài khoản</p>
+                <p className="text-xs text-gray-300 font-medium truncate" title={state.user?.email}>{state.user?.email}</p>
+              </div>
+            </div>
+
             <NavItem 
               icon={<HelpCircle size={18} />} label="Hỗ trợ & FAQ" 
               isActive={activeTab === 'help'} onClick={() => handleTabChange('help')} 
             />
+
             <button
                onClick={() => {
-                 actions.clearDemoInvoices();
-                 toast.success('Đã xóa dữ liệu mẫu');
+                 if (confirm('Bạn có chắc chắn muốn xóa toàn bộ hóa đơn mẫu?')) {
+                   actions.clearDemoInvoices();
+                   toast.success('Đã xóa dữ liệu mẫu');
+                 }
                }}
-               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all group text-red-400 hover:bg-white/5 hover:text-red-300 w-full text-left"
+               className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium transition-all group text-red-400 hover:bg-white/5 hover:text-red-300 w-full text-left"
             >
-               <span className="group-hover:text-red-300"><UserX size={18} /></span>
+               <span className="group-hover:text-red-300"><UserX size={16} /></span>
                Xóa dữ liệu mẫu
+            </button>
+
+            <button
+               onClick={() => actions.signOut()}
+               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all group text-red-400 hover:bg-red-950/30 hover:text-red-300 w-full text-left border border-red-500/10 mt-1"
+            >
+               <span className="group-hover:text-red-300"><LogOut size={18} /></span>
+               Đăng xuất
             </button>
           </div>
         </div>

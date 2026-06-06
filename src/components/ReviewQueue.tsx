@@ -5,7 +5,7 @@ import { Check, X, AlertTriangle, ChevronLeft, ChevronRight, Save } from 'lucide
 import { toast } from './Toast';
 
 export default function ReviewQueue() {
-  const { state, dispatch } = useAppStore();
+  const { state, dispatch, actions } = useAppStore();
   const pendingInvoices = state.invoices.filter(i => i.status === 'pending_review');
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -44,16 +44,17 @@ export default function ReviewQueue() {
     });
   };
 
-  const handleStatusChange = (status: 'confirmed' | 'rejected') => {
-    dispatch({
-      type: 'UPDATE_INVOICE',
-      payload: { ...currentInvoice, status }
-    });
-    
-    toast.success(status === 'confirmed' ? "Đã xác nhận hóa đơn" : "Đã loại bỏ hóa đơn");
-    
-    if (currentIndex > 0 && currentIndex >= pendingInvoices.length - 1) {
-      setCurrentIndex(currentIndex - 1);
+  const handleStatusChange = async (status: 'confirmed' | 'rejected') => {
+    try {
+      const updatedInvoice = { ...currentInvoice, status };
+      await actions.updateInvoice(updatedInvoice);
+      toast.success(status === 'confirmed' ? "Đã xác nhận hóa đơn" : "Đã loại bỏ hóa đơn");
+      
+      if (currentIndex > 0 && currentIndex >= pendingInvoices.length - 1) {
+        setCurrentIndex(currentIndex - 1);
+      }
+    } catch (err: any) {
+      console.error("Error updating status in Supabase:", err);
     }
   };
 

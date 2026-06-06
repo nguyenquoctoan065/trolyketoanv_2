@@ -40,4 +40,7 @@ export interface InvoiceData {
 
 export interface AppState {
   invoices: InvoiceData[];
+  user: any | null;
+  authLoading: boolean;
 }
+

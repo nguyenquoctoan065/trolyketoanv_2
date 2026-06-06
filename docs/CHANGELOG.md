@@ -50,3 +50,30 @@ Tất cả các sửa đổi, cải tiến lớn hay phát sinh trên dự án n
 
 ### Sửa lỗi (Fixed)
 - Sửa lỗi TypeScript Compiler trên môi trường Next.js 15 liên quan đến kiểu dữ liệu của hàm thông báo `toast` trong `InvoiceTable.tsx`.
+
+---
+
+## [Ngày 06/06/2026] - Chuyển đổi Backend Supabase, Cloudinary & Bảo mật Đa người dùng
+
+### Đã thêm (Added)
+- **Hệ thống Xác thực (Supabase Auth)**: Tích hợp màn hình Đăng ký / Đăng nhập (`AuthScreen.tsx`) với giao diện kính mờ (glassmorphism) hiện đại, hỗ trợ kiểm tra định dạng email và mật khẩu tối thiểu 6 ký tự.
+- **Kết nối Supabase Client**: Tạo cấu hình kết nối ứng dụng với Supabase qua SDK trong `src/lib/supabaseClient.ts`.
+- **Phân quyền Đa người dùng (Multi-tenant)**: Kích hoạt chính sách bảo mật mức dòng (Row Level Security - RLS) trên database Supabase để đảm bảo dữ liệu hóa đơn của ai chỉ người đó xem và quản lý được, tránh rò rỉ thông tin kế toán.
+- **Tải ảnh lên Đám mây (Cloudinary Storage)**: Tích hợp SDK Cloudinary vào API Route `/api/ocr/route.ts` để tự động upload ảnh/PDF hóa đơn lên Cloudinary, trả về liên kết ảnh tĩnh lâu dài lưu trữ vào cơ sở dữ liệu thay vì Blob URL tạm thời.
+- **Tài liệu Deploy**: Viết tài liệu [DEPLOYMENT.md](file:///d:/Downloads/trolyketoanv_2/docs/DEPLOYMENT.md) hướng dẫn deploy Next.js lên Vercel chi tiết từng bước.
+
+
+### Thay đổi (Changed)
+- **Bộ nhớ Trạng thái (store.tsx)**: Thiết kế lại cơ chế quản lý trạng thái, chuyển đổi từ việc ghi cục bộ vào trình duyệt (`localStorage`) sang thực hiện các truy vấn bất đồng bộ thời gian thực (real-time CRUD) đồng bộ với Supabase Database.
+- **Giao diện Sidebar & TopHeader**: Bổ sung thẻ hiển thị thông tin tài khoản người dùng hiện tại và nút **Đăng xuất** tích hợp hiệu ứng chuyển cảnh mượt mà ở góc dưới Sidebar.
+- **Cấu hình .env**: Cấu hình mẫu các khóa kết nối Cloudinary và Supabase để phân tách bảo mật môi trường phát triển.
+
+### Sửa lỗi (Fixed)
+- **Đồng bộ hóa Trạng thái**: Khắc phục lỗi dữ liệu hóa đơn tải lên hoặc duyệt trạng thái chỉ hiển thị tạm thời rồi biến mất. Thay đổi cơ chế từ việc gọi hàm `dispatch` cục bộ sang gọi các phương thức bất đồng bộ `actions.addInvoice` và `actions.updateInvoice` để ghi nhận dữ liệu trực tiếp vào database Supabase.
+- **Dịch lỗi & Kiểm tra đầu vào (Toasts & Validations)**: 
+  * Bổ sung kiểm tra định dạng email bằng regex và giới hạn mật khẩu >= 6 ký tự tại màn hình xác thực với các thông báo `toast` tiếng Việt sinh động.
+  * Tích hợp bộ chuyển dịch lỗi thông minh cho Supabase Auth (lỗi trùng email, sai mật khẩu, tài khoản chưa kích hoạt) sang câu văn tiếng Việt thân thiện, rõ ràng.
+  * Cải tiến bộ dịch lỗi cho Gemini OCR API, hỗ trợ hiển thị thông báo chi tiết khi hết hạn mức (Quota 429) hoặc sai khóa API Key trong file `.env`.
+
+
+

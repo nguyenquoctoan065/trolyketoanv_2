@@ -1,6 +1,15 @@
 import { GoogleGenAI, Type } from '@google/genai';
+import { v2 as cloudinary } from 'cloudinary';
 
 export const maxDuration = 60;
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
 
 export async function POST(req: Request) {
   try {
@@ -21,6 +30,34 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(arrayBuffer);
     const base64Data = buffer.toString("base64");
 
+    // 1. Upload file to Cloudinary
+    let cloudinaryUrl = "";
+    try {
+      const uploadResult = await new Promise<any>((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            resource_type: 'auto',
+            folder: 'accobot_invoices',
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        ).end(buffer);
+      });
+      cloudinaryUrl = uploadResult?.secure_url || "";
+    } catch (uploadError: any) {
+      console.error("Cloudinary Upload Error:", uploadError);
+      return Response.json({ 
+        error: `Lỗi tải hóa đơn lên Cloudinary: ${uploadError.message || uploadError}. Vui lòng kiểm tra lại cấu hình tài khoản Cloudinary trong file .env.` 
+      }, { status: 500 });
+    }
+
+    if (!cloudinaryUrl) {
+      return Response.json({ error: "Tải ảnh lên Cloudinary không thành công." }, { status: 500 });
+    }
+
+    // 2. Run Gemini 2.5 Flash OCR
     const ai = new GoogleGenAI({ 
       apiKey: apiKey,
       httpOptions: { headers: { 'User-Agent': 'aistudio-build-vercel' } }
@@ -91,22 +128,30 @@ Lưu ý:
 
     const outputText = response.text;
     if (outputText) {
-      return Response.json(JSON.parse(outputText));
+      const parsedData = JSON.parse(outputText);
+      // Attach the Cloudinary image URL so the client can save it to database
+      parsedData.original_file_url = cloudinaryUrl;
+      return Response.json(parsedData);
     } else {
       return Response.json({ error: "Không thể trích xuất dữ liệu từ ảnh." }, { status: 500 });
     }
 
   } catch (error: any) {
     console.error("Next.js OCR API Error:", error);
-    let errorMessage = "Lỗi hệ thống khi OCR.";
-    if (error && (error.status === 429 || (error.message && (error.message.includes("429") || error.message.includes("Quota"))))) {
-      errorMessage = "Hệ thống Google báo lỗi: Đã vượt quá giới hạn lượt dùng API Gemini miễn phí (Quota exceeded - 429). Do tài khoản Google của bạn đã hết hạn mức, vui lòng đổi API Key khác hoặc nâng cấp gói API.";
-    } else if (error && error.message) {
-      try {
-        const parsed = JSON.parse(error.message);
-        errorMessage = parsed.error?.message || error.message;
-      } catch (e) {
-        errorMessage = error.message;
+    let errorMessage = "Đã xảy ra sự cố hệ thống khi đọc hóa đơn. Vui lòng thử lại!";
+    if (error && error.message) {
+      const msg = error.message.toLowerCase();
+      if (error.status === 429 || msg.includes("429") || msg.includes("quota") || msg.includes("limit")) {
+        errorMessage = "Giới hạn lượt dùng thử miễn phí của API Gemini đã hết (Lỗi 429 - Quota Exceeded). Bạn vui lòng thay đổi API Key khác hoặc nâng cấp gói sử dụng nhé!";
+      } else if (msg.includes("api key not valid") || msg.includes("invalid api key") || msg.includes("key invalid") || msg.includes("api_key_invalid") || msg.includes("api key invalid")) {
+        errorMessage = "Khóa API Gemini (GEMINI_API_KEY) cấu hình trong file .env không hợp lệ hoặc đã bị khóa. Vui lòng kiểm tra và cập nhật lại!";
+      } else {
+        try {
+          const parsed = JSON.parse(error.message);
+          errorMessage = parsed.error?.message || error.message;
+        } catch (e) {
+          errorMessage = error.message;
+        }
       }
     }
     return Response.json({ error: errorMessage }, { status: 500 });

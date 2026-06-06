@@ -14,7 +14,7 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const { dispatch } = useAppStore();
+  const { actions } = useAppStore();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map((file) => Object.assign(file, {
@@ -43,35 +43,33 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
     setFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const loadDemoInvoice = () => {
+  const loadDemoInvoice = async () => {
     const demoId = uuidv4();
-    dispatch({
-      type: 'ADD_INVOICE',
-      payload: {
-        id: demoId,
-        original_file_url: 'https://images.unsplash.com/photo-1620800754877-33230a133d1c?auto=format&fit=crop&q=80&w=800',
-        original_file_name: 'demo_hoa_don.jpg',
-        created_at: Date.now(),
-        status: 'pending_review',
-        invoice_date: { value: '15/06/2026', confidence: 'high' },
-        invoice_number: { value: 'HD-99999', confidence: 'high' },
-        vendor_name: { value: 'CÔNG TY TNHH DEMO', confidence: 'high' },
-        vendor_tax_code: { value: '0123456789', confidence: 'high' },
-        items: [
-          {
-            description: { value: 'Dịch vụ phần mềm Kế toán', confidence: 'high' },
-            quantity: { value: 1, confidence: 'high' },
-            unit_price: { value: 1500000, confidence: 'medium' },
-            amount: { value: 1500000, confidence: 'high' }
-          }
-        ],
-        vat_rate: { value: 10, confidence: 'high' },
-        subtotal: { value: 1500000, confidence: 'high' },
-        vat_amount: { value: 150000, confidence: 'high' },
-        total: { value: 1650000, confidence: 'high' },
-        notes: { value: '', confidence: 'high' },
-        needs_review: false,
-      }
+    await actions.addInvoice({
+      id: demoId,
+      original_file_url: 'https://images.unsplash.com/photo-1620800754877-33230a133d1c?auto=format&fit=crop&q=80&w=800',
+      original_file_name: 'demo_hoa_don.jpg',
+      created_at: Date.now(),
+      status: 'pending_review',
+      invoice_date: { value: '15/06/2026', confidence: 'high' },
+      invoice_number: { value: 'HD-99999', confidence: 'high' },
+      vendor_name: { value: 'CÔNG TY TNHH DEMO', confidence: 'high' },
+      vendor_tax_code: { value: '0123456789', confidence: 'high' },
+      items: [
+        {
+          description: { value: 'Dịch vụ phần mềm Kế toán', confidence: 'high' },
+          quantity: { value: 1, confidence: 'high' },
+          unit_price: { value: 1500000, confidence: 'medium' },
+          amount: { value: 1500000, confidence: 'high' }
+        }
+      ],
+      vat_rate: { value: 10, confidence: 'high' },
+      subtotal: { value: 1500000, confidence: 'high' },
+      vat_amount: { value: 150000, confidence: 'high' },
+      total: { value: 1650000, confidence: 'high' },
+      notes: { value: '', confidence: 'high' },
+      needs_review: false,
+      is_demo: true,
     });
     toast.success('Đã tải hóa đơn mẫu thành công!');
     onComplete();
@@ -120,16 +118,13 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
           throw new Error('Dữ liệu trả về từ máy chủ không hợp lệ (Không phải JSON).');
         }
         
-        dispatch({
-          type: 'ADD_INVOICE',
-          payload: {
-            ...data,
-            id: uuidv4(),
-            original_file_url: file.preview,
-            original_file_name: file.name,
-            created_at: Date.now(),
-            status: 'pending_review'
-          }
+        await actions.addInvoice({
+          ...data,
+          id: uuidv4(),
+          original_file_url: data.original_file_url || file.preview,
+          original_file_name: file.name,
+          created_at: Date.now(),
+          status: 'pending_review'
         });
         
         successCount++;

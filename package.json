@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
+    "@supabase/supabase-js": "^2.107.0",
+    "cloudinary": "^2.10.0",
     "date-fns": "^4.4.0",
     "fuse.js": "^7.4.1",
     "html2canvas": "^1.4.1",
