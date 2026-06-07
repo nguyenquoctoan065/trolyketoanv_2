@@ -1,36 +1,59 @@
-import React, { useState } from 'react';
-import { Mail, Lock, User, Loader2, Sparkles, CheckCircle, Eye, EyeOff } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
-import { toast } from './Toast';
+import React, { useState } from "react";
+import {
+  Mail,
+  Lock,
+  User,
+  Loader2,
+  Sparkles,
+  CheckCircle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { supabase } from "../lib/supabaseClient";
+import { toast } from "./Toast";
 
-export default function AuthScreen({ onAuthSuccess }: { onAuthSuccess: (user: any) => void }) {
+export default function AuthScreen({
+  onAuthSuccess,
+}: {
+  onAuthSuccess: (user: any) => void;
+}) {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error('Vui lòng điền đầy đủ địa chỉ Email và Mật khẩu của bạn!');
+      toast.error("Vui lòng điền đầy đủ địa chỉ Email và Mật khẩu của bạn!");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      toast.error('Địa chỉ Email không đúng định dạng (ví dụ: ten@congty.com). Vui lòng nhập lại!');
+      toast.error(
+        "Địa chỉ Email không đúng định dạng (ví dụ: ten@congty.com). Vui lòng nhập lại!",
+      );
       return;
     }
 
-    if (password.length < 6) {
-      toast.error('Mật khẩu phải dài tối thiểu 6 ký tự để đảm bảo an toàn!');
+    // Only enforce minimum password length when signing up
+    if (isSignUp && password.length < 6) {
+      toast.error("Mật khẩu phải dài tối thiểu 6 ký tự để đảm bảo an toàn!");
       return;
     }
 
-    if (isSignUp && password !== confirmPassword) {
-      toast.error('Mật khẩu xác nhận không khớp nhau. Vui lòng nhập lại mật khẩu!');
+    // When signing up, confirmPassword must be provided
+    if (isSignUp && !confirmPassword) {
+      toast.error("Vui lòng nhập lại mật khẩu để xác nhận!");
+      return;
+    }
+    if (isSignUp && password.trim() !== confirmPassword.trim()) {
+      toast.error(
+        "Mật khẩu xác nhận không khớp nhau. Vui lòng nhập lại mật khẩu!",
+      );
       return;
     }
 
@@ -46,13 +69,15 @@ export default function AuthScreen({ onAuthSuccess }: { onAuthSuccess: (user: an
         if (error) throw error;
 
         if (data.user) {
-          // If email confirmation is enabled, they need to check email, 
+          // If email confirmation is enabled, they need to check email,
           // but if not, they might be logged in directly.
           if (data.session) {
-            toast.success('Đăng ký tài khoản thành công!');
+            toast.success("Đăng ký tài khoản thành công!");
             onAuthSuccess(data.user);
           } else {
-            toast.success('Đăng ký thành công! Vui lòng kiểm tra hộp thư email để xác nhận tài khoản.');
+            toast.success(
+              "Đăng ký thành công! Vui lòng kiểm tra hộp thư email để xác nhận tài khoản.",
+            );
             setIsSignUp(false); // Switch to login
           }
         }
@@ -65,26 +90,47 @@ export default function AuthScreen({ onAuthSuccess }: { onAuthSuccess: (user: an
         if (error) throw error;
 
         if (data.user) {
-          toast.success('Đăng nhập thành công!');
+          toast.success("Đăng nhập thành công!");
           onAuthSuccess(data.user);
         }
       }
     } catch (err: any) {
-      console.error('Auth error:', err);
-      let friendlyMessage = 'Đã xảy ra lỗi hệ thống khi xác thực. Vui lòng thử lại sau!';
-      
+      console.error("Auth error:", err);
+      let friendlyMessage =
+        "Đã xảy ra lỗi hệ thống khi xác thực. Vui lòng thử lại sau!";
+
       if (err && err.message) {
         const msg = err.message.toLowerCase();
-        if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
-          friendlyMessage = 'Địa chỉ Email hoặc Mật khẩu không chính xác. Bạn vui lòng kiểm tra lại!';
-        } else if (msg.includes('email not confirmed')) {
-          friendlyMessage = 'Tài khoản của bạn chưa được kích hoạt qua Email. Vui lòng kiểm tra hộp thư của bạn (hoặc thư rác) để nhấp vào link kích hoạt nhé!';
-        } else if (msg.includes('user already registered') || msg.includes('email already in use')) {
-          friendlyMessage = 'Email này đã được đăng ký tài khoản trước đó. Bạn hãy đăng nhập hoặc sử dụng một email khác nhé!';
-        } else if (msg.includes('signup is disabled')) {
-          friendlyMessage = 'Chức năng đăng ký tài khoản mới hiện đang tạm khóa. Vui lòng liên hệ quản trị viên!';
-        } else if (msg.includes('rate limit') || msg.includes('too many requests')) {
-          friendlyMessage = 'Bạn đã thao tác đăng nhập/đăng ký quá nhanh. Vui lòng đợi khoảng 1 phút rồi thử lại nhé!';
+        if (
+          msg.includes("invalid login credentials") ||
+          msg.includes("invalid credentials")
+        ) {
+          friendlyMessage =
+            "Tài khoản hoặc mật khẩu không đúng. Vui lòng kiểm tra lại!";
+        } else if (
+          msg.includes("invalid password") ||
+          msg.includes("wrong password") ||
+          msg.includes("password is incorrect")
+        ) {
+          friendlyMessage = "Mật khẩu sai. Vui lòng thử lại!";
+        } else if (msg.includes("email not confirmed")) {
+          friendlyMessage =
+            "Tài khoản của bạn chưa được kích hoạt qua Email. Vui lòng kiểm tra hộp thư của bạn (hoặc thư rác) để nhấp vào link kích hoạt nhé!";
+        } else if (
+          msg.includes("user already registered") ||
+          msg.includes("email already in use")
+        ) {
+          friendlyMessage =
+            "Email này đã được đăng ký tài khoản trước đó. Bạn hãy đăng nhập hoặc sử dụng một email khác nhé!";
+        } else if (msg.includes("signup is disabled")) {
+          friendlyMessage =
+            "Chức năng đăng ký tài khoản mới hiện đang tạm khóa. Vui lòng liên hệ quản trị viên!";
+        } else if (
+          msg.includes("rate limit") ||
+          msg.includes("too many requests")
+        ) {
+          friendlyMessage =
+            "Bạn đã thao tác đăng nhập/đăng ký quá nhanh. Vui lòng đợi khoảng 1 phút rồi thử lại nhé!";
         } else {
           friendlyMessage = err.message;
         }
@@ -108,26 +154,44 @@ export default function AuthScreen({ onAuthSuccess }: { onAuthSuccess: (user: an
           <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/20 mb-4 animate-bounce duration-1000">
             <CheckCircle className="w-7 h-7 text-white" strokeWidth={2.5} />
           </div>
-          <h1 className="text-3xl font-display font-bold text-gray-900 tracking-tight">AccoBot</h1>
-          <p className="text-xs text-primary-600 font-semibold tracking-wider uppercase mt-1">Trợ lý Kế toán Thông minh AI</p>
+          <h1 className="text-3xl font-display font-bold text-gray-900 tracking-tight">
+            AccoBot
+          </h1>
+          <p className="text-xs text-primary-600 font-semibold tracking-wider uppercase mt-1">
+            Trợ lý Kế toán Thông minh AI
+          </p>
         </div>
 
         {/* Auth Tabs */}
         <div className="grid grid-cols-2 bg-gray-100/80 p-1 rounded-xl mb-8 border border-gray-200/50">
           <button
             type="button"
-            onClick={() => { setIsSignUp(false); setEmail(''); setPassword(''); setConfirmPassword(''); }}
+            onClick={() => {
+              setIsSignUp(false);
+              setEmail("");
+              setPassword("");
+              setConfirmPassword("");
+            }}
             className={`py-2.5 text-sm font-semibold rounded-lg transition-all ${
-              !isSignUp ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+              !isSignUp
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-900"
             }`}
           >
             Đăng nhập
           </button>
           <button
             type="button"
-            onClick={() => { setIsSignUp(true); setEmail(''); setPassword(''); setConfirmPassword(''); }}
+            onClick={() => {
+              setIsSignUp(true);
+              setEmail("");
+              setPassword("");
+              setConfirmPassword("");
+            }}
             className={`py-2.5 text-sm font-semibold rounded-lg transition-all ${
-              isSignUp ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+              isSignUp
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-900"
             }`}
           >
             Đăng ký
@@ -135,15 +199,20 @@ export default function AuthScreen({ onAuthSuccess }: { onAuthSuccess: (user: an
         </div>
 
         <h2 className="text-xl font-bold text-gray-800 mb-6 font-display">
-          {isSignUp ? 'Tạo tài khoản mới' : 'Đăng nhập vào hệ thống'}
+          {isSignUp ? "Tạo tài khoản mới" : "Đăng nhập vào hệ thống"}
         </h2>
 
-        {/* Auth Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Auth Form (disable native browser validation to use custom toasts) */}
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Email</label>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Email
+            </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Mail
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+              />
               <input
                 type="email"
                 required
@@ -156,11 +225,16 @@ export default function AuthScreen({ onAuthSuccess }: { onAuthSuccess: (user: an
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Mật khẩu</label>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Mật khẩu
+            </label>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <Lock
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+              />
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 required
                 placeholder="••••••"
                 value={password}
@@ -179,11 +253,16 @@ export default function AuthScreen({ onAuthSuccess }: { onAuthSuccess: (user: an
 
           {isSignUp && (
             <div className="animate-in fade-in duration-300 slide-in-from-top-1">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Nhập lại mật khẩu</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Nhập lại mật khẩu
+              </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Lock
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   required
                   placeholder="••••••"
                   value={confirmPassword}
@@ -207,14 +286,15 @@ export default function AuthScreen({ onAuthSuccess }: { onAuthSuccess: (user: an
             ) : (
               <>
                 <Sparkles size={18} />
-                <span>{isSignUp ? 'Đăng ký' : 'Đăng nhập'}</span>
+                <span>{isSignUp ? "Đăng ký" : "Đăng nhập"}</span>
               </>
             )}
           </button>
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6 leading-relaxed">
-          Bằng việc tiếp tục, bạn đồng ý với Điều khoản Sử dụng và Chính sách Bảo mật dữ liệu kế toán của AccoBot.
+          Bằng việc tiếp tục, bạn đồng ý với Điều khoản Sử dụng và Chính sách
+          Bảo mật dữ liệu kế toán của AccoBot.
         </p>
       </div>
     </div>
