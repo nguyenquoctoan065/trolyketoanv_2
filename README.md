@@ -1,62 +1,81 @@
-# AccoBot - Trợ lý Kế toán Tự động
+# AccoBot — Trợ lý Kế toán tự động
 
-AccoBot là một ứng dụng web AI giúp tự động hóa quy trình kế toán bằng cách trích xuất dữ liệu từ các tệp hóa đơn (hình ảnh, PDF) bằng sự hỗ trợ của mô hình ngôn ngữ lớn (Gemini), cho phép người dùng kiểm duyệt thông tin và cuối cùng xuất bảng thống kê dữ liệu dưới dạng tệp Excel.
+AccoBot là một ứng dụng web giúp tự động hóa bước trích xuất thông tin từ hóa đơn (ảnh, PDF) bằng OCR và mô hình ngôn ngữ, cung cấp giao diện duyệt, chỉnh sửa và xuất dữ liệu sang Excel để nhập vào phần mềm kế toán.
 
-## Các tính năng chính
+## Tổng quan
 
-*   **Tải lên hóa đơn đa định dạng:** Hỗ trợ tải lên ảnh (JPG, PNG) và file PDF của hóa đơn thông qua giao diện kéo-thả trực quan.
-*   **Trích xuất dữ liệu tự động (OCR & AI):** Sử dụng sức mạnh của Google Gemini API để phân tích văn bản trong hóa đơn, tự động nhận dạng các nội dung quan trọng:
-    *   Ngày tháng lập hóa đơn
-    *   Số hóa đơn
-    *   Tên đơn vị bán hàng, mã số thuế
-    *   Chi tiết từng mặt hàng (Tên hàng, số lượng, đơn giá, thành tiền)
-    *   Tổng tiền, thuế suất VAT, tiền thuế
-*   **Hệ thống chờ duyệt (Review Queue):** Dữ liệu sau khi trích xuất sẽ được đánh giá mức độ tin cậy. Giao diện xem trước cho phép nhân viên kế toán đối chiếu song song ảnh gốc và dữ liệu được trích xuất để chỉnh sửa và xác nhận trước khi lưu vào hệ thống.
-*   **Quản lý & Thống kê:** Bảng liệt kê các hóa đơn đã được duyệt với thông tin tổng quan, trạng thái thanh toán. Trang Dashboard cung cấp biểu đồ thống kê trực quan về tổng chi tiêu, trạng thái hóa đơn...
-*   **Xuất khẩu dữ liệu:** Tích hợp tính năng xuất toàn bộ danh sách hóa đơn ra file Excel (`.xlsx`) để dễ dàng tích hợp với các phần mềm kế toán khác.
+- Tải lên hóa đơn dưới dạng ảnh hoặc PDF.
+- Trích xuất thông tin quan trọng (ngày, số hóa đơn, đơn vị bán, hàng hóa, số lượng, đơn giá, tổng, thuế).
+- Cho phép nhân viên kế toán duyệt và chỉnh sửa dữ liệu trước khi lưu.
+- Xuất báo cáo/ danh sách sang file Excel (`.xlsx`).
 
-## Công nghệ sử dụng
+## Tính năng chính
 
-*   **Front-end:** React 19, TypeScript, Vite
-*   **Styling:** Tailwind CSS, Lucide Icons
-*   **Back-end API:** Node.js, Express (hoặc tích hợp dưới dạng Vercel Serverless Functions)
-*   **AI Integration:** `@google/genai` (Google Gemini 2.5 Flash)
-*   **Xử lý File:** `multer`, `react-dropzone`
-*   **Xuất Excel:** `xlsx`
-*   **State Management:** React Context API
+- Tải lên đa định dạng: JPG, PNG, PDF.
+- Xử lý OCR + AI để nhận diện trường dữ liệu chính.
+- Hàng đợi duyệt (Review Queue) để so sánh ảnh gốc và dữ liệu trích xuất.
+- Bảng quản lý hóa đơn đã duyệt và dashboard thống kê cơ bản.
+- Xuất dữ liệu sang Excel để sử dụng trong các phần mềm kế toán.
 
-## Hướng dẫn cài đặt và chạy (Local Development)
+## Kiến trúc & Công nghệ (tổng quan)
 
-### 1. Yêu cầu hệ thống
-*   Đã cài đặt **Node.js** (Khuyến nghị phiên bản 18+).
+- `Next.js` (App Router) + TypeScript
+- `Tailwind CSS` cho styling
+- `@google/genai` (Google Gemini) để tích hợp AI
+- Một API route xử lý OCR tại `src/app/api/ocr/route.ts`
+- `lib/supabaseClient.ts` có cấu hình Supabase (tùy chọn dùng để lưu dữ liệu)
 
-### 2. Cài đặt các thư viện
-Mở terminal tại thư mục gốc của dự án và chạy:
+> Ghi chú: repo có thể tích hợp các dịch vụ khác nhau tuỳ theo cấu hình (Supabase, Google Gemini, v.v.).
+
+## Cài đặt nhanh (Local)
+
+1. Cài đặt Node.js (khuyến nghị >= 18).
+2. Cài đặt phụ thuộc:
+
 ```bash
 npm install
 ```
 
-### 3. Cấu hình Biến môi trường (Environment Variables)
-Tạo một tệp `.env` tại thư mục gốc của dự án nếu chưa có, và thêm API Key của Google Gemini:
-```env
-GEMINI_API_KEY="AIzaSy... (API Key của bạn)"
-```
-*(Nếu sử dụng Visual Studio Code, lưu ý đảm bảo tệp `.env` được lưu thành công ở chuẩn UTF-8 và project đã được load đầy đủ để có thể nhận dạng các biến trong quá trình chạy server).*
+3. Tạo file biến môi trường `.env.local` hoặc `.env` ở thư mục gốc và thêm tối thiểu:
 
-### 4. Chạy dự án
-Có hai dịch vụ cần được khởi chạy trong dự án này lúc dev: Frontend Vite và Backend Node. Hệ thống được cấu hình sẵn lệnh `dev`, chạy server bằng `tsx`:
+```env
+GEMINI_API_KEY="<API_KEY_CỦA_BẠN>"
+SUPABASE_URL="<SUPABASE_URL (nếu dùng)>"
+SUPABASE_ANON_KEY="<SUPABASE_ANON_KEY (nếu dùng)>"
+# Nếu có biến khác, thêm ở đây
+```
+
+4. Chạy ở chế độ phát triển:
+
 ```bash
 npm run dev
 ```
 
-Server sẽ khởi chạy tại (mặc định) `http://localhost:3000`. Cả backend API (`/api/*`) và frontend middleware sẽ chạy trên cổng này.
+5. Build và chạy production:
 
-## Lưu ý về triển khai (Deploy)
+```bash
+npm run build
+npm run start
+```
 
-*   Dự án hỗ trợ build cho môi trường Cloud Run hoặc container:
-    ```bash
-    npm run build
-    npm run start
-    ```
-*   Khi deploy (chẳng hạn như Vercel), hãy thiết lập thư mục build tĩnh (`dist`) và cấu hình các Serverless Function trong thư mục `/api` nếu API backend của bạn phân loại ra chạy serverless. Hoặc tuân thủ tài liệu cấu hình theo dạng app Node.js tùy thuộc vào platform.
-*   **Tuyệt đối không** lộ `GEMINI_API_KEY` dưới client-side (trình duyệt). Key phải được lưu dưới dạng Secret Variables trên server hoặc platform deploy.
+## Cách sử dụng (ngắn)
+
+- Mở ứng dụng, vào khu vực tải lên, kéo-thả hoặc chọn file hóa đơn.
+- Sau khi trích xuất, vào phần `Review Queue` để kiểm tra và chỉnh sửa các trường không chính xác.
+- Khi đã duyệt xong, xuất danh sách theo định dạng Excel để lưu hoặc nhập vào hệ thống kế toán.
+
+## Triển khai
+
+- Triển khai lên Vercel, Docker, hoặc Cloud Run đều được. Khi deploy, đảm bảo các API key (ví dụ `GEMINI_API_KEY`, Supabase keys) được lưu ở dạng Secret trên nền tảng, không để lộ trên client.
+
+## Đóng góp
+
+- Mọi góp ý, báo lỗi hoặc PR xin gửi lên repository. Ghi rõ mô tả thay đổi và cách kiểm tra.
+
+## Liên hệ
+
+- Nếu cần hỗ trợ nhanh, để lại issue hoặc contact trong phần mô tả dự án.
+
+---
+
+Phiên bản README này đã được viết lại để rõ ràng hơn cho người phát triển và người dùng tiếng Việt. Nếu bạn muốn tôi bổ sung phần hướng dẫn chi tiết hơn (ví dụ cấu hình Supabase, cách dùng Google Gemini, hoặc ví dụ API), hãy cho biết yêu cầu cụ thể.
