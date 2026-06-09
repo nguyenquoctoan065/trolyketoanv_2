@@ -15,6 +15,10 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const { actions } = useAppStore();
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [pendingInvoice, setPendingInvoice] = useState<any | null>(null);
+  const [duplicates, setDuplicates] = useState<any[]>([]);
+  const [activePreviewDuplicateId, setActivePreviewDuplicateId] = useState<string | null>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map((file) => Object.assign(file, {
@@ -77,7 +81,7 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
 
   const processFiles = async () => {
     if (files.length === 0) return;
-    
+
     setIsProcessing(true);
     setProgress({ current: 0, total: files.length });
 
@@ -86,11 +90,11 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       setProgress({ current: i + 1, total: files.length });
-      
+
       try {
         const formData = new FormData();
         formData.append('file', file);
-        
+
         const response = await fetch('/api/ocr', {
           method: 'POST',
           body: formData
@@ -117,7 +121,7 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
         if (!isJson) {
           throw new Error('Dữ liệu trả về từ máy chủ không hợp lệ (Không phải JSON).');
         }
-        
+
         await actions.addInvoice({
           ...data,
           id: uuidv4(),
@@ -126,7 +130,7 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
           created_at: Date.now(),
           status: 'pending_review'
         });
-        
+
         successCount++;
       } catch (error: any) {
         toast.error(`Lỗi khi xử lý file ${file.name}: ${error.message}`);
@@ -135,7 +139,7 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
 
     setIsProcessing(false);
     setFiles([]);
-    
+
     if (successCount > 0) {
       toast.success(`Đã đọc thành công ${successCount} hóa đơn`);
       onComplete();
@@ -148,7 +152,7 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
         <div>
           <h2 className="text-xl font-display font-bold text-gray-900 flex items-center gap-2">
             <FileUp className="text-primary-500" strokeWidth={2.5} size={22} />
-            Tải lên hóa đơn 
+            Tải lên hóa đơn
           </h2>
           <p className="text-sm text-gray-500 mt-1">Hỗ trợ nhận diện thông minh đa định dạng (PDF, JPG, PNG)</p>
         </div>
@@ -158,8 +162,8 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
         </button>
       </div>
 
-      <div 
-        {...getRootProps()} 
+      <div
+        {...getRootProps()}
         className={`border-2 border-dashed rounded-3xl p-8 md:p-16 text-center transition-all cursor-pointer group shadow-sm
           ${isDragActive ? 'border-primary-500 bg-primary-50 ring-4 ring-primary-500/10' : 'border-gray-200 hover:border-primary-400 bg-white hover:shadow-md'}`}
       >
@@ -178,9 +182,9 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
       {files.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-in slide-in-from-bottom-2 fade-in duration-300">
           <div className="flex justify-between items-center mb-6">
-             <h3 className="font-semibold text-gray-800 text-lg">Đã chọn {files.length} file chờ xử lý</h3>
+            <h3 className="font-semibold text-gray-800 text-lg">Đã chọn {files.length} file chờ xử lý</h3>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-5 mb-8">
             {files.map((file) => (
               <div key={file.id} className="relative group rounded-xl overflow-hidden border border-gray-100 bg-gray-50 aspect-square shadow-sm hover:shadow-md transition-shadow">
@@ -194,14 +198,14 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
                     <span className="text-xs font-medium text-gray-500 text-center px-4 w-full truncate border border-transparent">PDF</span>
                   </div>
                 )}
-                
-                <button 
+
+                <button
                   onClick={(e) => { e.stopPropagation(); removeFile(file.id); }}
                   className="absolute top-2 right-2 bg-white text-gray-700 rounded-full p-1.5 shadow-md opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all hover:bg-red-50 hover:text-red-500"
                 >
                   <X size={16} strokeWidth={2.5} />
                 </button>
-                
+
                 <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md px-3 py-2 text-xs font-medium truncate border-t border-gray-100/50">
                   {file.name}
                 </div>
@@ -221,9 +225,187 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
                   <span>AI Đang Xử lý ({progress.current}/{progress.total})</span>
                 </>
               ) : (
-                <span className="flex items-center gap-2"><Sparkles size={18}/> Bắt đầu trích xuất AI</span>
+                <span className="flex items-center gap-2"><Sparkles size={18} /> Bắt đầu trích xuất AI</span>
               )}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* DUPLICATE WARNING MODAL */}
+      {showDuplicateModal && pendingInvoice && (
+        <div id="duplicate-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]">
+
+            {/* Header */}
+            <div className="p-5 border-b border-gray-100 flex items-start gap-4 bg-[#FFFDF6]">
+              <div className="p-2.5 bg-amber-100 rounded-xl text-[#D97706] flex-shrink-0">
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900 leading-snug">
+                  Phát hiện hóa đơn có thể trùng lặp
+                </h3>
+                <p className="text-xs text-amber-800 mt-1 font-medium">
+                  Hệ thống tìm thấy hóa đơn có thông tin tương tự trên Supabase.
+                </p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto space-y-5 flex-1 select-none">
+
+              {/* Current Invoice Data */}
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+                <div className="text-[10px] font-bold text-[#475569] uppercase tracking-wider mb-2">Hóa đơn đang tải lên:</div>
+                <div className="grid grid-cols-2 gap-y-2 text-xs">
+                  <div>
+                    <span className="text-gray-500 block">Số Hóa Đơn</span>
+                    <strong className="text-gray-955 font-semibold text-sm">{pendingInvoice.invoice_number?.value || '(Trống)'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block">Tổng tiền thanh toán</span>
+                    <strong className="text-emerald-700 font-bold text-sm">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(pendingInvoice.total?.value || 0)}
+                    </strong>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-gray-500 block">Nhà cung cấp</span>
+                    <strong className="text-gray-955 font-semibold">{pendingInvoice.vendor_name?.value || '(Trống)'}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Explanatory Message */}
+              <p className="text-xs text-[#475569] leading-relaxed">
+                Hóa đơn này có vẻ đã được thêm trước đó. Hãy so sánh với danh sách hóa đơn trùng khớp dưới đây trước khi đưa ra quyết định:
+              </p>
+
+              {/* List of Duplicates (Max 3) */}
+              <div className="space-y-2.5">
+                <div className="text-[10px] font-bold text-[#475569] uppercase tracking-wider">Danh sách hóa đơn trùng (Tối đa 3)</div>
+                <div className="space-y-2">
+                  {duplicates.slice(0, 3).map((dup) => {
+                    const dupNum = typeof dup.invoice_number === 'object' && dup.invoice_number !== null
+                      ? dup.invoice_number.value
+                      : dup.invoice_number;
+                    const dupName = typeof dup.vendor_name === 'object' && dup.vendor_name !== null
+                      ? dup.vendor_name.value
+                      : dup.vendor_name;
+                    const dupTotal = typeof dup.total === 'object' && dup.total !== null
+                      ? dup.total.value
+                      : typeof dup.total_amount === 'number'
+                        ? dup.total_amount
+                        : (dup.total || 0);
+
+                    const isExpanded = activePreviewDuplicateId === dup.id;
+
+                    return (
+                      <div key={dup.id} className="border border-gray-200 rounded-xl overflow-hidden transition-all duration-200">
+                        <div className="bg-white p-3.5 flex items-center justify-between gap-3 text-xs">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className="font-bold text-gray-900 font-mono text-sm">{dupNum || '(Không có số)'}</span>
+                              {getStatusBadge(dup.status)}
+                            </div>
+                            <div className="text-gray-500 truncate">{dupName || 'Không có tên'}</div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setActivePreviewDuplicateId(isExpanded ? null : dup.id)}
+                              className="px-2.5 py-1 text-xs border border-gray-300 hover:border-[#1B52CC] hover:text-[#1B52CC] rounded-lg font-semibold cursor-pointer transition-all flex items-center gap-1"
+                            >
+                              <Eye size={12} />
+                              <span>{isExpanded ? 'Ẩn' : 'Xem'}</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Collapsible expanded detail */}
+                        {isExpanded && (
+                          <div className="bg-[#F8F9FC] border-t border-gray-200 p-3.5 text-xs grid grid-cols-2 gap-2 animate-fade-in select-text">
+                            <div>
+                              <span className="text-gray-400 block">Ngày tạo lập</span>
+                              <span className="font-semibold text-gray-900">{formatDuplicateDate(dup.created_at)}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 block">Số tiền lập</span>
+                              <span className="font-bold text-emerald-700">
+                                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(dupTotal))}
+                              </span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-gray-400 block">Mã số thuế / Nhà cung cấp</span>
+                              <span className="font-semibold text-gray-900">{dup.vendor_tax_code?.value || dup.vendor_tax_code || 'Chưa cung cấp'}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t border-gray-100 bg-[#F8F9FC] flex justify-end items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  // "Bỏ qua, không thêm" -> Đóng modal, clear pending
+                  setShowDuplicateModal(false);
+                  setPendingInvoice(null);
+                  setDuplicates([]);
+                  setActivePreviewDuplicateId(null);
+                  if (duplicateTrackId) {
+                    setTracks((prev) =>
+                      prev.map((t) => (t.id === duplicateTrackId ? { ...t, status: 'error', error: 'Bị hủy do trùng lặp' } : t))
+                    );
+                  }
+                  toast.success("Đã hủy bỏ tải lên hóa đơn trùng lặp.");
+                }}
+                className="px-4 py-2 bg-white border border-gray-300 text-[#475569] hover:bg-gray-50 rounded-xl text-xs font-bold transition-all cursor-pointer leading-none"
+                style={{ height: '38px' }}
+              >
+                Bỏ qua, không thêm
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (pendingInvoice) {
+                    try {
+                      // “Vẫn thêm mới” -> Thêm vào global database/store
+                      await actions.addInvoice(pendingInvoice);
+
+                      // Gọi logAudit (BƯỚC 4)
+                      await logAudit(
+                        pendingInvoice.id,
+                        'added_despite_duplicate',
+                        null,
+                        { duplicateOf: duplicates.map(d => d.id) }
+                      );
+
+                      toast.success("Đã lưu hóa đơn thành công mặc dù phát hiện trùng lặp.");
+                    } catch (e: any) {
+                      toast.error("Không thể lưu hóa đơn: " + e.message);
+                    }
+                  }
+                  setShowDuplicateModal(false);
+                  setPendingInvoice(null);
+                  setDuplicates([]);
+                  setActivePreviewDuplicateId(null);
+                }}
+                className="px-4 py-2 border border-red-500 hover:bg-red-50 text-red-600 rounded-xl text-xs font-bold transition-all cursor-pointer leading-none hover:shadow-sm"
+                style={{ height: '38px' }}
+              >
+                Vẫn thêm mới
+              </button>
+            </div>
+
           </div>
         </div>
       )}
