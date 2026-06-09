@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../store';
 import { Download, Search, FileText, Filter } from 'lucide-react';
 import * as xlsx from 'xlsx';
-import { format } from 'date-fns';
+import { format, parse, parseISO, isValid, isBefore, isAfter, startOfDay, endOfDay } from 'date-fns';
 import { toast } from './Toast';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -19,7 +19,28 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export default function InvoiceTable() {
+interface InvoiceTableProps {
+  startDate?: string;
+  endDate?: string;
+}
+
+const parseInvoiceDate = (dateStr: string): Date | null => {
+  if (!dateStr) return null;
+  
+  if (dateStr.includes('/')) {
+    const parsed = parse(dateStr, 'dd/MM/yyyy', new Date());
+    if (isValid(parsed)) return parsed;
+  }
+  
+  if (dateStr.includes('-')) {
+    const parsed = parseISO(dateStr);
+    if (isValid(parsed)) return parsed;
+  }
+  
+  return null;
+};
+
+export default function InvoiceTable({ startDate: propStartDate = '', endDate: propEndDate = '' }: InvoiceTableProps = {}) {
   const { state } = useAppStore();
   const confirmedInvoices = state.invoices.filter(i => i.status === 'confirmed');
   
@@ -30,6 +51,17 @@ export default function InvoiceTable() {
   const [minAmount, setMinAmount] = useState<string>('');
   const [maxAmount, setMaxAmount] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  
+  const [startDate, setStartDate] = useState(propStartDate);
+  const [endDate, setEndDate] = useState(propEndDate);
+
+  useEffect(() => {
+    if (propStartDate) setStartDate(propStartDate);
+  }, [propStartDate]);
+
+  useEffect(() => {
+    if (propEndDate) setEndDate(propEndDate);
+  }, [propEndDate]);
   
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -69,7 +101,28 @@ export default function InvoiceTable() {
        if (total > Number(maxAmount)) isAmountMatch = false;
     }
 
-    return isSearchMatch && isMonthMatch && isAmountMatch;
+    let isDateRangeMatch = true;
+    if (startDate || endDate) {
+      const invDate = parseInvoiceDate(inv.invoice_date?.value || '');
+      if (invDate) {
+        if (startDate) {
+          const start = startOfDay(parseISO(startDate));
+          if (isBefore(invDate, start)) {
+            isDateRangeMatch = false;
+          }
+        }
+        if (endDate) {
+          const end = endOfDay(parseISO(endDate));
+          if (isAfter(invDate, end)) {
+            isDateRangeMatch = false;
+          }
+        }
+      } else {
+        isDateRangeMatch = false;
+      }
+    }
+
+    return isSearchMatch && isMonthMatch && isAmountMatch && isDateRangeMatch;
   });
 
   const handleExportExcel = () => {
@@ -142,13 +195,23 @@ export default function InvoiceTable() {
       pdf.setFont('Roboto', 'normal');
       pdf.setTextColor(107, 114, 128); // Gray 500
       pdf.text(`Ngày xuất báo cáo: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, 30);
-      pdf.text(`Tổng số lượng hóa đơn: ${filteredInvoices.length}`, 14, 36);
+      
+      let dateRangeStr = 'Tất cả';
+      if (startDate && endDate) {
+        dateRangeStr = `${format(parseISO(startDate), 'dd/MM/yyyy')} - ${format(parseISO(endDate), 'dd/MM/yyyy')}`;
+      } else if (startDate) {
+        dateRangeStr = `Từ ${format(parseISO(startDate), 'dd/MM/yyyy')}`;
+      } else if (endDate) {
+        dateRangeStr = `Đến ${format(parseISO(endDate), 'dd/MM/yyyy')}`;
+      }
+      pdf.text(`Khoảng thời gian: ${dateRangeStr}`, 14, 36);
+      pdf.text(`Tổng số lượng hóa đơn: ${filteredInvoices.length}`, 14, 42);
 
       // Total summary
       const totalSum = filteredInvoices.reduce((acc, curr) => acc + (curr.total?.value || 0), 0);
       pdf.setFont('Roboto', 'bold');
       pdf.setTextColor(37, 99, 235); // Blue 600
-      pdf.text(`Tổng giá trị thanh toán: ${formatMoney(totalSum)} VNĐ`, 14, 42);
+      pdf.text(`Tổng giá trị thanh toán: ${formatMoney(totalSum)} VNĐ`, 14, 48);
 
       const tableData = filteredInvoices.map((inv, index) => [
         index + 1,
@@ -162,7 +225,7 @@ export default function InvoiceTable() {
       ]);
 
       autoTable(pdf, {
-        startY: 50,
+        startY: 56,
         head: [['STT', 'Ngày HĐ', 'Số HĐ', 'Nhà cung cấp', 'MST', 'Trước thuế', 'Thuế VAT', 'Thanh toán']],
         body: tableData as string[][],
         theme: 'grid',
@@ -246,23 +309,28 @@ export default function InvoiceTable() {
                <Filter size={16} /> <span className="hidden sm:inline">Bộ lọc nâng cao</span>
             </button>
             
-            <div className="flex gap-2 w-full sm:w-auto ml-auto">
-              <button 
-                onClick={handleExportPDF}
-                disabled={filteredInvoices.length === 0}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
-              >
-                <FileText size={16} />
-                <span className="hidden sm:inline">Xuất PDF</span>
-              </button>
-              <button 
-                onClick={handleExportExcel}
-                disabled={filteredInvoices.length === 0}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm shadow-primary-500/20 disabled:opacity-50 cursor-pointer"
-              >
-                <Download size={16} />
-                <span>Xuất Excel</span>
-              </button>
+            <div className="flex flex-col items-end gap-1.5 w-full sm:w-auto ml-auto">
+              <span className="text-xs text-gray-500 font-medium mr-1 select-none">
+                Sẽ xuất {filteredInvoices.length} bản ghi
+              </span>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <button 
+                  onClick={handleExportPDF}
+                  disabled={filteredInvoices.length === 0}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
+                >
+                  <FileText size={16} />
+                  <span className="hidden sm:inline">Xuất PDF</span>
+                </button>
+                <button 
+                  onClick={handleExportExcel}
+                  disabled={filteredInvoices.length === 0}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm shadow-primary-500/20 disabled:opacity-50 cursor-pointer"
+                >
+                  <Download size={16} />
+                  <span>Xuất Excel</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -303,8 +371,26 @@ export default function InvoiceTable() {
                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-medium">₫</span>
                    </div>
                 </div>
+                <div className="space-y-1.5 w-full sm:w-auto">
+                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Từ ngày</label>
+                   <input 
+                     type="date"
+                     value={startDate}
+                     onChange={(e) => setStartDate(e.target.value)}
+                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-700 bg-white"
+                   />
+                </div>
+                <div className="space-y-1.5 w-full sm:w-auto">
+                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Đến ngày</label>
+                   <input 
+                     type="date"
+                     value={endDate}
+                     onChange={(e) => setEndDate(e.target.value)}
+                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-700 bg-white"
+                   />
+                </div>
                 <button 
-                  onClick={() => { setFilterMonth(''); setMinAmount(''); setMaxAmount(''); setSearchTerm(''); }}
+                  onClick={() => { setFilterMonth(''); setMinAmount(''); setMaxAmount(''); setSearchTerm(''); setStartDate(''); setEndDate(''); }}
                   className="px-4 py-2 mt-auto text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-200 rounded-lg font-medium transition-colors w-full sm:w-auto text-center"
                 >
                    Xóa thiết lập bộ lọc

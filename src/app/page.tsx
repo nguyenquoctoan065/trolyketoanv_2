@@ -174,6 +174,94 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+
+function ConfirmDeleteDemoModal({
+  isOpen,
+  onClose,
+  onConfirm,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-300">
+      <div className="bg-white rounded-[28px] shadow-2xl w-full max-w-md overflow-hidden border border-red-100/50 p-7 animate-in zoom-in-95 duration-300 relative">
+        {/* Subtle decorative hazard bar on top */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-500 via-rose-500 to-amber-500" />
+
+        <div className="flex flex-col items-center text-center mt-2">
+          {/* Glowing Animated Warning Icon */}
+          <div className="relative mb-5 flex items-center justify-center">
+            {/* Outer wave ring */}
+            <div className="absolute inset-0 w-16 h-16 bg-red-100 rounded-full animate-ping opacity-30" />
+
+            {/* Middle decorative ring */}
+            <div className="absolute w-16 h-16 bg-red-50 rounded-full border border-red-100 flex items-center justify-center shadow-inner" />
+
+            {/* Inner icon container */}
+            <div className="relative z-10 w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-red-500/10">
+              <Trash2 size={24} className="stroke-[2.25] animate-pulse" />
+            </div>
+          </div>
+
+          <h3 className="text-xl font-bold text-gray-900 tracking-tight mb-2">
+            Xác nhận xóa dữ liệu mẫu?
+          </h3>
+
+          <p className="text-sm text-gray-500 max-w-sm leading-relaxed mb-6">
+            Hệ thống sẽ thực hiện dọn dẹp các hóa đơn dùng thử để tài khoản trống và sẵn sàng tải lên tài liệu thật của bạn.
+          </p>
+
+          {/* Visual reminder block outlining exactly what gets removed and what is safe */}
+          <div className="w-full bg-slate-50/85 border border-gray-100 rounded-2xl p-4.5 text-left mb-7 space-y-3">
+            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 block mb-1">
+              Phạm vi tác động của hành động:
+            </span>
+
+            <div className="flex items-start gap-2.5 text-sm text-gray-650">
+              <span className="text-rose-500 select-none mt-0.5 font-bold">✕</span>
+              <span>Xóa toàn bộ <strong className="text-gray-800 font-medium">Hóa đơn mẫu (Demo)</strong> hiện có trong bảng lưu trữ.</span>
+            </div>
+
+            <div className="flex items-start gap-2.5 text-sm text-gray-650">
+              <span className="text-rose-500 select-none mt-0.5 font-bold">✕</span>
+              <span>Làm mới biểu đồ phân tích và ngân sách liên quan đến demo.</span>
+            </div>
+
+            <div className="flex items-start gap-2.5 text-sm text-gray-650">
+              <span className="text-emerald-500 select-none mt-0.5 font-bold">✓</span>
+              <span>Giữ an toàn <strong className="text-gray-800 font-medium">Hóa đơn thực tế</strong> do bạn tự nhập hoặc tự chụp từ trước.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Buttons Action Bar */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-all cursor-pointer text-center"
+          >
+            Giữ lại dữ liệu
+          </button>
+
+          <button
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
+            className="flex-1 py-3 px-4 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] active:translate-y-[0.5px] text-white text-sm font-semibold transition-all shadow-md shadow-red-500/10 hover:shadow-red-500/20 cursor-pointer text-center flex items-center justify-center gap-2"
+          >
+            <Trash2 size={16} />
+            Đúng, Xóa ngay
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TopHeader({
   activeTab,
   onMenuClick,
@@ -213,6 +301,7 @@ function AppContent() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { state, actions } = useAppStore();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const pendingCount = state.invoices.filter(
     (i) => i.status === "pending_review",
@@ -256,7 +345,7 @@ function AppContent() {
 
   // 2. Session check: show login screen if not logged in
   if (!state.user) {
-    return <AuthScreen onAuthSuccess={() => {}} />;
+    return <AuthScreen onAuthSuccess={() => { }} />;
   }
 
   return (
@@ -270,6 +359,14 @@ function AppContent() {
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
+      <ConfirmDeleteDemoModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={async () => {
+          await actions.clearDemoInvoices();
+          toast.success("Đã xóa dữ liệu mẫu");
+        }}
+      />
 
       {/* Sidebar Navigation */}
       <nav
@@ -359,14 +456,11 @@ function AppContent() {
 
             <button
               onClick={() => {
-                if (confirm("Bạn có chắc chắn muốn xóa toàn bộ hóa đơn mẫu?")) {
-                  actions.clearDemoInvoices();
-                  toast.success("Đã xóa dữ liệu mẫu");
-                }
+                setShowDeleteConfirm(true);
               }}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium transition-all group text-red-400 hover:bg-white/5 hover:text-red-300 w-full text-left"
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium cursor-pointer transition-all group text-red-400 hover:bg-white/5 hover:text-red-300 w-full text-left"
             >
-              <span className="group-hover:text-red-300">
+              <span className="group-hover:text-red-305">
                 <UserX size={16} />
               </span>
               Xóa dữ liệu mẫu
@@ -425,11 +519,10 @@ function NavItem({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all group ${
-        isActive
-          ? "bg-primary-600/10 text-primary-400"
-          : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
-      }`}
+      className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all group ${isActive
+        ? "bg-primary-600/10 text-primary-400"
+        : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
+        }`}
     >
       <div className="flex items-center gap-3">
         <span
