@@ -4,9 +4,39 @@ Tất cả các sửa đổi, cải tiến lớn hay phát sinh trên dự án n
 
 ---
 
+## [Ngày 10/06/2026] - Chế độ Offline & Đồng bộ Tự động & Sửa lỗi Hệ thống
+### Sửa lỗi (Fixed)
+- **Lỗi biên dịch Client Component**: Khắc phục lỗi webpack compile của Next.js bằng cách khai báo chỉ thị `"use client";` tại đầu các tệp [OfflineSyncManager.tsx](file:///c:/Users/ad/Documents/Word%20c%E1%BB%A7a%20thu%20h%E1%BA%A1/trolyketoanv_2/src/OfflineSyncManager.tsx), [OfflineQueue.tsx](file:///c:/Users/ad/Documents/Word%20c%E1%BB%A7a%20thu%20h%E1%BA%A1/trolyketoanv_2/src/components/OfflineQueue.tsx) và [store.tsx](file:///c:/Users/ad/Documents/Word%20c%E1%BB%A7a%20thu%20h%E1%BA%A1/trolyketoanv_2/src/store.tsx).
+- **Lỗi HTTP 500 khi Đồng bộ Offline**: Giải quyết lỗi biên dịch và gọi API Gemini do mất MIME type của tệp khi khôi phục từ IndexedDB (trình duyệt gửi tệp dưới dạng `application/octet-stream`). Tích hợp bộ tự động nhận diện và suy luận MIME type dựa vào đuôi mở rộng của tệp cả ở client ([OfflineSyncManager.tsx](file:///c:/Users/ad/Documents/Word%20c%E1%BB%A7a%20thu%20h%E1%BA%A1/trolyketoanv_2/src/OfflineSyncManager.tsx), [useOfflineSync.ts](file:///c:/Users/ad/Documents/Word%20c%E1%BB%A7a%20thu%20h%E1%BA%A1/trolyketoanv_2/src/lib/useOfflineSync.ts)) và ở server API Route ([route.ts](file:///c:/Users/ad/Documents/Word%20c%E1%BB%A7a%20thu%20h%E1%BA%A1/trolyketoanv_2/src/app/api/ocr/route.ts)).
+- **Lỗi kiểm tra trùng lặp (Duplicate Detection)**: Sửa lại điều kiện kiểm tra hóa đơn trùng lặp, hóa đơn bị tính là trùng nếu "Số hóa đơn giống nhau VÀ (có chung Mã số thuế HOẶC chung Tên nhà cung cấp HOẶC chung Tổng tiền)". Cải thiện thuật toán trích xuất dữ liệu thông minh trong `utils.ts` để đọc và so khớp các giá trị dạng lồng ({value:...}) một cách an toàn. Tự động hiển thị thẻ [CẢNH BÁO TRÙNG LẶP] khi thực hiện quét offline.
+- **Lỗi quét hóa đơn khi vừa bật mạng**: Cải tiến quá trình đồng bộ tự động `OfflineSyncManager`, thêm độ trễ (delay 3 giây) sau khi bắt được sự kiện "online" để đảm bảo kết nối mạng đã thực sự ổn định trước khi gọi API, khắc phục tình trạng gọi lỗi HTTP 500 khi vừa bật wifi/4G. Tích hợp trực tiếp kiểm tra trùng lặp cho các hóa đơn đồng bộ ngầm.
+
+### Đã thêm (Added)
+- **Tính năng Chụp và Lưu Offline**: Cho phép người dùng tải lên hoặc chụp ảnh hóa đơn ngay cả khi không có kết nối mạng. Hóa đơn được lưu an toàn vào IndexedDB của trình duyệt.
+- **Tự động Đồng bộ (Auto-sync)**: Hệ thống tự động phát hiện khi có mạng trở lại và thực hiện OCR + Upload toàn bộ hóa đơn đang chờ trong hàng đợi.
+- **Widget Hàng đợi Offline (`OfflineQueue`)**: Một widget nhỏ góc màn hình hiển thị số lượng hóa đơn đang chờ đồng bộ, kèm modal chi tiết để quản lý (xem trạng thái, lỗi, xóa).
+- **Quản lý IndexedDB (`offlineDb.ts`)**: Sử dụng thư viện `idb` để quản lý cơ sở dữ liệu cục bộ `invoice-offline` hiệu quả.
+- **Trình quản lý Đồng bộ (`OfflineSyncManager.tsx`)**: Thành phần chạy ngầm xử lý việc đẩy dữ liệu lên server khi điều kiện mạng cho phép.
+
+### Thay đổi (Changed)
+- **Cải tiến `UploadSection`**: Tích hợp logic kiểm tra kết nối mạng. Nếu offline, tệp tin sẽ được chuyển hướng lưu vào bộ nhớ cục bộ thay vì gọi API.
+
+---
+
 ## [Ngày 09/06/2026] - Phát hiện trùng lặp, Biểu đồ Top 5 Nhà cung cấp & Cải tiến Toàn diện
 ### Thay đổi (Changed)
 - **Logic lọc hóa đơn**: Tích hợp các hàm `parse`, `parseISO`, `isValid`, `isBefore`, `isAfter`, `startOfDay`, `endOfDay` từ `date-fns` để phân tích và so khớp chính xác ngày hóa đơn (hỗ trợ cả định dạng `dd/MM/yyyy` và `yyyy-MM-dd`) với khoảng thời gian đã chọn.
+
+---
+
+## [Ngày 10/06/2026] - Chụp và Lưu Offline, Tự động Đồng bộ hóa
+### Đã thêm (Added)
+- **Tính năng chụp và lưu hóa đơn khi offline**: Tích hợp IndexedDB (thông qua thư viện `idb`) để lưu trữ ảnh và metadata hóa đơn khi không có kết nối mạng.
+- **Tự động đồng bộ (Auto-sync)**: Xây dựng cơ chế lắng nghe sự kiện `online` để tự động kích hoạt OCR và upload hóa đơn từ bộ nhớ tạm lên Supabase.
+- **Widget Hàng đợi Offline (`OfflineQueue`)**: Hiển thị thông báo số lượng hóa đơn chờ đồng bộ và modal chi tiết trạng thái (Chờ sync, Đang xử lý, Lỗi).
+- **Quản lý đồng bộ (`OfflineSyncManager`)**: Thành phần chạy ngầm xử lý việc thử lại (retry) và cập nhật trạng thái đồng bộ real-time.
+### Thay đổi (Changed)
+- **Khu vực Tải lên (`UploadSection.tsx`)**: Cập nhật luồng xử lý để tự động chuyển hướng lưu offline nếu phát hiện mất kết nối internet.
 - **Xuất báo cáo PDF**: Cập nhật hàm `handleExportPDF` để in thêm khoảng thời gian áp dụng bộ lọc lên tiêu đề báo cáo PDF và tự động căn chỉnh vị trí bảng (`startY: 56`) để tránh bị đè chữ.
 - **Nút xóa bộ lọc**: Cập nhật hành động "Xóa thiết lập bộ lọc" để xóa đồng thời cả `startDate` và `endDate` về rỗng.
 ### Đã thêm (Added)

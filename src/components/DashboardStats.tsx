@@ -16,13 +16,14 @@ import {
   Legend
 } from 'recharts';
 import { format, isThisMonth, isToday } from 'date-fns';
-import { FileText, DollarSign, CheckCircle, Clock, Settings, X, Calendar, AlertCircle } from 'lucide-react';
+import { FileText, DollarSign, CheckCircle, Clock, Settings, X, Calendar, AlertCircle, Trash2 } from 'lucide-react';
 import { toast } from './Toast';
 
 export default function DashboardStats() {
-  const { state } = useAppStore();
+  const { state, actions } = useAppStore();
   const [budget, setBudget] = useState<number>(0);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
 
   useEffect(() => {
@@ -42,6 +43,11 @@ export default function DashboardStats() {
     } else {
       toast.error('Ngân sách không hợp lệ!');
     }
+  };
+  
+  const handleDeleteAll = async () => {
+     await actions.deleteAllInvoices();
+     setIsDeleteConfirmOpen(false);
   };
   
   const stats = useMemo(() => {
@@ -69,7 +75,7 @@ export default function DashboardStats() {
         monthStr: format(d, 'MM/yyyy'),
         monthKey: format(d, 'yyyy-MM'),
         spent: 0,
-        budget: budget // Using current budget as target for historical view for simplicity
+        budget: budget 
       };
     });
 
@@ -137,7 +143,6 @@ export default function DashboardStats() {
         </div>
         
         <div className="flex items-center gap-4 w-full md:w-auto">
-           {/* Budget Progress (if budget > 0) */}
            {budget > 0 ? (
              <div className="flex items-center gap-4 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 flex-1 md:flex-auto">
                 <div className="text-right">
@@ -166,6 +171,13 @@ export default function DashboardStats() {
            >
              <Settings size={20} />
            </button>
+           <button 
+             onClick={() => setIsDeleteConfirmOpen(true)}
+             className="p-2.5 border border-red-200 rounded-xl hover:bg-red-50 text-red-600 hover:text-red-700 transition-all shadow-sm bg-white"
+             title="Xóa toàn bộ dữ liệu"
+           >
+             <Trash2 size={20} />
+           </button>
         </div>
       </div>
       
@@ -191,7 +203,6 @@ export default function DashboardStats() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Line Chart 6 months */}
         <div className="bg-white p-7 rounded-2xl border border-gray-100 shadow-sm lg:col-span-2">
           <div className="flex justify-between items-center mb-6">
              <h3 className="text-lg font-semibold text-gray-800">Lịch sử chi phí & Ngân sách (6 tháng)</h3>
@@ -220,7 +231,6 @@ export default function DashboardStats() {
           </div>
         </div>
 
-        {/* Pie Chart */}
         <div className="bg-white p-7 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center">
           <h3 className="text-lg font-semibold text-gray-800 self-start mb-6 w-full">Trạng thái xử lý hệ thống</h3>
           <div className="h-48 w-full relative">
@@ -309,6 +319,19 @@ export default function DashboardStats() {
          </div>
       )}
 
+      {isDeleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+           <div className="bg-white p-7 rounded-3xl shadow-xl w-full max-w-sm">
+              <h3 className="text-lg font-bold text-gray-900 mb-3">Xóa toàn bộ dữ liệu?</h3>
+              <p className="text-sm text-gray-600 mb-6">Bạn có chắc chắn muốn xóa tất cả hóa đơn đã lưu? Hành động này không thể hoàn tác.</p>
+              <div className="flex gap-3">
+                 <button onClick={() => setIsDeleteConfirmOpen(false)} className="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200">Hủy</button>
+                 <button onClick={handleDeleteAll} className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700">Xóa hết</button>
+              </div>
+           </div>
+        </div>
+      )}
+
       {isBudgetModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-xl w-full max-w-sm overflow-hidden border border-white/20 animate-in zoom-in-95 duration-300">
@@ -362,4 +385,3 @@ function StatCard({ icon, iconBg, label, value }: { icon: React.ReactNode, iconB
     </div>
   );
 }
-

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../store';
 import { InvoiceData, ExtractedField } from '../types';
-import { Check, X, AlertTriangle, ChevronLeft, ChevronRight, Save } from 'lucide-react';
+import { Check, X, AlertTriangle, ChevronLeft, ChevronRight, Save, FileText } from 'lucide-react';
 import { toast } from './Toast';
 
 export default function ReviewQueue() {
@@ -11,13 +11,15 @@ export default function ReviewQueue() {
 
   if (pendingInvoices.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-160px)] text-gray-500 animate-in fade-in zoom-in-95 duration-500 bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="bg-primary-50 p-6 rounded-full mb-6 relative">
-           <div className="absolute inset-0 bg-primary-100 rounded-full animate-ping opacity-50"></div>
-           <Check className="w-16 h-16 text-primary-500 relative z-10" strokeWidth={2.5} />
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-160px)] text-gray-500 animate-in fade-in zoom-in-95 duration-500 bg-white rounded-3xl shadow-sm border border-gray-100">
+        <div className="bg-primary-50 p-8 rounded-full mb-6 relative">
+          <div className="absolute inset-0 bg-primary-100 rounded-full animate-ping opacity-30"></div>
+          <Check className="w-20 h-20 text-primary-500 relative z-10" strokeWidth={2.5} />
         </div>
-        <h2 className="text-2xl font-display font-semibold text-gray-900 mb-2">Đã duyệt xong!</h2>
-        <p className="text-gray-500 text-base">Không còn hóa đơn nào trong hàng chờ cắt lớp.</p>
+        <h2 className="text-3xl font-display font-bold text-gray-900 mb-2">Tuyệt vời!</h2>
+        <p className="text-gray-500 text-lg max-w-md text-center px-6 leading-relaxed">
+          Tất cả hóa đơn đã được xử lý xong. Bạn có thể xem lại tại tab <span className="font-bold text-primary-600">Dữ liệu đã duyệt</span>.
+        </p>
       </div>
     );
   }
@@ -49,7 +51,7 @@ export default function ReviewQueue() {
       const updatedInvoice = { ...currentInvoice, status };
       await actions.updateInvoice(updatedInvoice);
       toast.success(status === 'confirmed' ? "Đã xác nhận hóa đơn" : "Đã loại bỏ hóa đơn");
-      
+
       if (currentIndex > 0 && currentIndex >= pendingInvoices.length - 1) {
         setCurrentIndex(currentIndex - 1);
       }
@@ -59,187 +61,309 @@ export default function ReviewQueue() {
   };
 
   return (
-    <div className="h-full flex flex-col pt-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-end mb-6 gap-4">
-        <div>
-          <h2 className="text-2xl font-display font-semibold text-gray-900">Kiểm tra & Duyệt (OCR)</h2>
-          <p className="text-sm text-gray-500 mt-1 font-medium bg-gray-100 px-3 py-1 rounded-full inline-flex mt-2">
-            Đang hiển thị {currentIndex + 1} trên tổng số {pendingInvoices.length} bản ghi
-          </p>
+    <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Top Navigation Bar */}
+      <div className="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex items-center gap-4">
+          <div className="bg-primary-500 text-white w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-lg shadow-primary-500/20">
+            {currentIndex + 1}
+          </div>
+          <div>
+            <h2 className="text-xl font-display font-bold text-gray-900">Kiểm soát chất lượng (OCR)</h2>
+            <p className="text-xs text-gray-500 font-medium">Hàng chờ: {pendingInvoices.length} bản ghi chưa duyệt</p>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button 
-            disabled={currentIndex === 0}
-            onClick={() => setCurrentIndex(i => i - 1)}
-            className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <button 
-            disabled={currentIndex >= pendingInvoices.length - 1}
-            onClick={() => setCurrentIndex(i => i + 1)}
-            className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-          >
-            <ChevronRight size={20} />
-          </button>
+
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center bg-gray-100 rounded-full px-4 py-1.5 gap-2">
+            <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></div>
+            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Đang kiểm tra AI</span>
+          </div>
+
+          <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
+            <button
+              disabled={currentIndex === 0}
+              onClick={() => setCurrentIndex(i => i - 1)}
+              className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-30 shadow-sm active:scale-95"
+            >
+              <ChevronLeft size={20} strokeWidth={2.5} />
+            </button>
+            <div className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700">
+              {currentIndex + 1} / {pendingInvoices.length}
+            </div>
+            <button
+              disabled={currentIndex >= pendingInvoices.length - 1}
+              onClick={() => setCurrentIndex(i => i + 1)}
+              className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-30 shadow-sm active:scale-95"
+            >
+              <ChevronRight size={20} strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0 lg:h-[calc(100vh-220px)]">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-0 lg:h-[calc(100vh-240px)]">
         {/* Left: Document View */}
-        <div className="bg-gray-200/60 rounded-2xl overflow-auto border border-gray-200 shadow-inner p-2 lg:p-4 flex justify-center items-start h-[400px] lg:h-full relative group">
-          <div className="bg-white p-2 shadow-md relative w-full h-full rounded-xl flex items-center justify-center overflow-hidden transition-all duration-300">
+        <div className="flex flex-col gap-4 h-[500px] lg:h-full">
+          <div className="flex-1 bg-slate-800 rounded-3xl overflow-hidden shadow-2xl relative border-4 border-slate-700">
             {currentInvoice.original_file_url ? (
-              currentInvoice.original_file_name.endsWith('.pdf') ? (
-                <iframe src={currentInvoice.original_file_url + '#toolbar=0'} className="w-full h-full rounded-lg bg-white" />
+              currentInvoice.original_file_name?.endsWith('.pdf') ? (
+                <iframe
+                  src={currentInvoice.original_file_url + '#toolbar=0'}
+                  className="w-full h-full bg-white"
+                />
               ) : (
-                <img src={currentInvoice.original_file_url} alt="Invoice" className="w-full h-full object-contain rounded-lg shadow-sm" />
+                <div className="w-full h-full flex items-center justify-center p-4">
+                  <img
+                    src={currentInvoice.original_file_url}
+                    alt="Invoice"
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                  />
+                </div>
               )
             ) : (
-               <div className="text-gray-400 font-medium">Lỗi tải tài liệu xem trước</div>
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
+                <X size={48} />
+                <span className="font-bold">Lỗi tải tài liệu xem trước</span>
+              </div>
+            )}
+
+            {/* View controls overlay (Simulated) */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+              <button className="text-white/80 hover:text-white p-1 transition-colors"><ChevronLeft size={18} /></button>
+              <span className="text-white text-xs font-bold px-2 border-x border-white/10">100%</span>
+              <button className="text-white/80 hover:text-white p-1 transition-colors"><ChevronRight size={18} /></button>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary-50 rounded-lg text-primary-600">
+                <FileText size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-gray-900 truncate max-w-[200px]">
+                  {currentInvoice.is_demo ? 'Hóa đơn mẫu (Demo)' : (currentInvoice.original_file_name || 'Tài liệu không tên')}
+                </p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-tighter">
+                  Tải lên lúc: {(() => {
+                    try {
+                      const d = new Date(currentInvoice.created_at);
+                      return isNaN(d.getTime()) ? 'Không rõ' : d.toLocaleTimeString();
+                    } catch {
+                      return 'Không rõ';
+                    }
+                  })()}
+                </p>
+              </div>
+            </div>
+            {currentInvoice.original_file_url && (
+              <a
+                href={currentInvoice.original_file_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] font-bold text-primary-600 hover:text-primary-700 bg-primary-50 px-3 py-1.5 rounded-lg transition-colors uppercase tracking-wider"
+              >
+                Mở file gốc
+              </a>
             )}
           </div>
         </div>
 
         {/* Right: Data Form */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-y-auto p-7 relative">
-          
-          {currentInvoice.needs_review && (
-            <div className="bg-orange-50 border border-orange-200 p-4 mb-6 flex items-start gap-4 rounded-xl relative overflow-hidden">
-              <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-400"></div>
-              <div className="bg-white p-2 rounded-lg shadow-sm">
-                 <AlertTriangle className="text-orange-500" size={20} />
+        <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col min-w-0 h-full overflow-hidden">
+
+          <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 tracking-tight">Chi tiết trích xuất</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Vui lòng rà soát các trường thông tin quan trọng</p>
               </div>
-              <p className="text-sm text-orange-800 leading-relaxed font-medium mt-1">
-                AI có độ chắn chắn thấp với một số ký tự. Vui lòng kiểm tra lại các vùng tô vàng/đỏ phía dưới.
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold border-b border-gray-100 pb-3 text-gray-800">1. Thông tin chung</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <FieldInput 
-                label="Số hóa đơn" 
-                field={currentInvoice.invoice_number} 
-                onChange={(val) => handleUpdateField('invoice_number', val)} 
-              />
-              <FieldInput 
-                label="Ngày hóa đơn" 
-                field={currentInvoice.invoice_date} 
-                onChange={(val) => handleUpdateField('invoice_date', val)} 
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 gap-5">
-              <FieldInput 
-                label="Nhà cung cấp" 
-                field={currentInvoice.vendor_name} 
-                onChange={(val) => handleUpdateField('vendor_name', val)} 
-              />
-              <FieldInput 
-                label="Mã số thuế" 
-                field={currentInvoice.vendor_tax_code} 
-                onChange={(val) => handleUpdateField('vendor_tax_code', val)} 
-              />
-            </div>
-
-            <h3 className="text-lg font-semibold border-b border-gray-100 pb-3 mt-10 text-gray-800">2. Số liệu thành tiền</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <FieldInput 
-                label="Tổng trước thuế" 
-                field={currentInvoice.subtotal} 
-                type="number"
-                onChange={(val) => handleUpdateField('subtotal', parseFloat(val))} 
-              />
-              <FieldInput 
-                label="Thuế suất VAT (%)" 
-                field={currentInvoice.vat_rate} 
-                type="number"
-                onChange={(val) => handleUpdateField('vat_rate', parseFloat(val))} 
-              />
-              <FieldInput 
-                label="Cộng tiền thuế" 
-                field={currentInvoice.vat_amount} 
-                type="number"
-                onChange={(val) => handleUpdateField('vat_amount', parseFloat(val))} 
-              />
-              <div className="relative">
-                 <FieldInput 
-                   label="Tổng tiền thanh toán" 
-                   field={currentInvoice.total} 
-                   type="number"
-                   onChange={(val) => handleUpdateField('total', parseFloat(val))} 
-                 />
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-gray-100 shadow-sm">
+                <div className={`w-2.5 h-2.5 rounded-full ${currentInvoice.needs_review ? 'bg-orange-400' : 'bg-green-400'}`}></div>
+                <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">
+                  {currentInvoice.needs_review ? 'Cần kiểm tra lại' : 'Độ tin cậy cao'}
+                </span>
               </div>
             </div>
 
-            <h3 className="text-lg font-semibold border-b border-gray-100 pb-3 mt-10 text-gray-800">3. Chi tiết hàng hóa bổ sung</h3>
-            {currentInvoice.items && currentInvoice.items.length > 0 ? (
-              <div className="space-y-4">
-                {currentInvoice.items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-4 p-4 bg-gray-50 border border-gray-100 rounded-xl relative hover:border-gray-200 transition-colors mt-4">
-                    <span className="absolute -left-2 -top-2 bg-gray-800 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold shadow-md">{index+1}</span>
-                    <div className="col-span-12 lg:col-span-6">
-                       <FieldInput 
-                          label="Mô tả danh mục" 
-                          field={item.description} 
-                          onChange={(val) => handleUpdateItem(index, 'description', val)} 
-                        />
-                    </div>
-                    <div className="col-span-4 lg:col-span-2">
-                       <FieldInput 
-                          label="Số lượng" 
-                          field={item.quantity} 
-                          type="number"
-                          onChange={(val) => handleUpdateItem(index, 'quantity', parseFloat(val))} 
-                        />
-                    </div>
-                    <div className="col-span-8 lg:col-span-2">
-                       <FieldInput 
-                          label="Đơn giá" 
-                          field={item.unit_price} 
-                          type="number"
-                          onChange={(val) => handleUpdateItem(index, 'unit_price', parseFloat(val))} 
-                        />
-                    </div>
-                    <div className="col-span-12 lg:col-span-2">
-                       <FieldInput 
-                          label="Thành tiền" 
-                          field={item.amount} 
-                          type="number"
-                          onChange={(val) => handleUpdateItem(index, 'amount', parseFloat(val))} 
-                        />
-                    </div>
-                  </div>
-                ))}
+            {currentInvoice.needs_review && (
+              <div className="bg-orange-50 border border-orange-200 p-4 flex items-start gap-4 rounded-2xl">
+                <AlertTriangle className="text-orange-500 shrink-0 mt-0.5" size={18} />
+                <p className="text-xs text-orange-800 leading-relaxed font-medium">
+                  AI phát hiện một số vùng dữ liệu mờ hoặc khó đọc. Các trường <span className="bg-orange-200 px-1 rounded">tô màu cam/đỏ</span> bên dưới cần được lưu ý đặc biệt.
+                </p>
               </div>
-            ) : (
-              <p className="text-sm text-gray-400 italic bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200">Không tìm thấy hoặc không có chi tiết mặt hàng</p>
             )}
-            
-            <div className="pt-6 pb-24">
-               <FieldInput 
-                  label="Ghi chú thêm" 
-                  field={currentInvoice.notes || { value: '', confidence: 'high' }} 
-                  onChange={(val) => handleUpdateField('notes', val)} 
-                />
-            </div>
           </div>
-          
-          <div className="sticky bottom-0 lg:absolute lg:bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-5 shadow-[0_-10px_20px_rgba(0,0,0,0.03)] flex flex-col sm:flex-row justify-between gap-4 mt-8 lg:mt-0 z-10">
-             <button 
-                onClick={() => handleStatusChange('rejected')}
-                className="flex flex-1 items-center justify-center gap-2 px-4 py-3.5 rounded-xl font-semibold text-red-600 bg-red-50/50 border border-red-100 hover:bg-red-50 hover:border-red-200 transition-all active:scale-95"
-             >
-                <X size={20} strokeWidth={2.5} /> Từ chối
-             </button>
-             <button 
-                onClick={() => handleStatusChange('confirmed')}
-                className="flex-[2] flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl font-semibold text-white bg-primary-600 hover:bg-primary-700 transition-all shadow-md shadow-primary-500/20 hover:shadow-lg active:scale-95 border border-primary-500/50"
-             >
-                <Save size={20} /> Xác nhận & Lưu chứng từ
-             </button>
+
+          <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-10 custom-scrollbar">
+            {/* Group 1: Invoice Identity */}
+            <section className="space-y-6">
+              <div className="flex items-center gap-3 border-b border-gray-100 pb-2">
+                <div className="w-1.5 h-4 bg-primary-500 rounded-full"></div>
+                <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em]">Thông tin định danh</h4>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <FieldInput
+                  label="Số hóa đơn"
+                  field={currentInvoice.invoice_number}
+                  onChange={(val) => handleUpdateField('invoice_number', val)}
+                />
+                <FieldInput
+                  label="Ngày hóa đơn"
+                  field={currentInvoice.invoice_date}
+                  onChange={(val) => handleUpdateField('invoice_date', val)}
+                />
+              </div>
+            </section>
+
+            {/* Group 2: Vendor Details */}
+            <section className="space-y-6">
+              <div className="flex items-center gap-3 border-b border-gray-100 pb-2">
+                <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
+                <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em]">Đối tác cung cấp</h4>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <FieldInput
+                  label="Tên nhà cung cấp"
+                  field={currentInvoice.vendor_name}
+                  onChange={(val) => handleUpdateField('vendor_name', val)}
+                />
+                <FieldInput
+                  label="Mã số thuế"
+                  field={currentInvoice.vendor_tax_code}
+                  onChange={(val) => handleUpdateField('vendor_tax_code', val)}
+                />
+              </div>
+            </section>
+
+            {/* Group 3: Financial Summary */}
+            <section className="space-y-6">
+              <div className="flex items-center gap-3 border-b border-gray-100 pb-2">
+                <div className="w-1.5 h-4 bg-green-500 rounded-full"></div>
+                <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em]">Số liệu tài chính</h4>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <FieldInput
+                  label="Tổng trước thuế"
+                  field={currentInvoice.subtotal}
+                  type="number"
+                  onChange={(val) => handleUpdateField('subtotal', parseFloat(val))}
+                />
+                <FieldInput
+                  label="Thuế suất VAT (%)"
+                  field={currentInvoice.vat_rate}
+                  type="number"
+                  onChange={(val) => handleUpdateField('vat_rate', parseFloat(val))}
+                />
+                <FieldInput
+                  label="Cộng tiền thuế"
+                  field={currentInvoice.vat_amount}
+                  type="number"
+                  onChange={(val) => handleUpdateField('vat_amount', parseFloat(val))}
+                />
+                <div className="bg-primary-50 rounded-2xl p-0.5 group">
+                  <FieldInput
+                    label="Tổng tiền thanh toán"
+                    field={currentInvoice.total}
+                    type="number"
+                    isMainAmount
+                    onChange={(val) => handleUpdateField('total', parseFloat(val))}
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Group 4: Line Items */}
+            <section className="space-y-6">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-4 bg-purple-500 rounded-full"></div>
+                  <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em]">Chi tiết hàng hóa</h4>
+                </div>
+                <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
+                  {currentInvoice.items?.length || 0} dòng hàng
+                </span>
+              </div>
+
+              {currentInvoice.items && currentInvoice.items.length > 0 ? (
+                <div className="space-y-6">
+                  {currentInvoice.items.map((item, index) => (
+                    <div key={index} className="relative p-6 bg-gray-50/50 rounded-3xl border border-gray-100 hover:border-primary-200 transition-all group/item">
+                      <div className="absolute -left-3 top-6 bg-gray-900 text-white text-[10px] font-black w-7 h-7 flex items-center justify-center rounded-xl shadow-lg transform -rotate-12">
+                        {index + 1}
+                      </div>
+
+                      <div className="grid grid-cols-12 gap-5">
+                        <div className="col-span-12">
+                          <FieldInput
+                            label="Mô tả danh mục hàng hóa / dịch vụ"
+                            field={item.description}
+                            onChange={(val) => handleUpdateItem(index, 'description', val)}
+                          />
+                        </div>
+                        <div className="col-span-12 sm:col-span-3">
+                          <FieldInput
+                            label="Số lượng"
+                            field={item.quantity}
+                            type="number"
+                            onChange={(val) => handleUpdateItem(index, 'quantity', parseFloat(val))}
+                          />
+                        </div>
+                        <div className="col-span-12 sm:col-span-4">
+                          <FieldInput
+                            label="Đơn giá"
+                            field={item.unit_price}
+                            type="number"
+                            onChange={(val) => handleUpdateItem(index, 'unit_price', parseFloat(val))}
+                          />
+                        </div>
+                        <div className="col-span-12 sm:col-span-5">
+                          <FieldInput
+                            label="Thành tiền"
+                            field={item.amount}
+                            type="number"
+                            onChange={(val) => handleUpdateItem(index, 'amount', parseFloat(val))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center p-12 bg-gray-50 rounded-3xl border border-dashed border-gray-200 text-gray-400">
+                  <FileText size={32} className="mb-2 opacity-20" />
+                  <p className="text-xs font-medium italic">Không phát hiện chi tiết mặt hàng</p>
+                </div>
+              )}
+            </section>
+
+            <section className="pt-4 pb-12">
+              <FieldInput
+                label="Ghi chú nghiệp vụ"
+                field={currentInvoice.notes || { value: '', confidence: 'high' }}
+                onChange={(val) => handleUpdateField('notes', val)}
+              />
+            </section>
+          </div>
+
+          {/* Action Footer */}
+          <div className="p-6 bg-white border-t border-gray-100 flex flex-col sm:flex-row justify-between gap-4 z-10 shadow-[0_-15px_30px_rgba(0,0,0,0.05)]">
+            <button
+              onClick={() => handleStatusChange('rejected')}
+              className="flex flex-1 items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold text-gray-500 hover:text-red-600 bg-gray-100 hover:bg-red-50 border border-transparent hover:border-red-100 transition-all active:scale-95 group"
+            >
+              <X size={20} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-300" />
+              <span className="uppercase tracking-wide text-xs">Loại bỏ</span>
+            </button>
+            <button
+              onClick={() => handleStatusChange('confirmed')}
+              className="flex-[2] flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-bold text-white bg-gray-900 hover:bg-black transition-all shadow-xl shadow-gray-900/10 hover:shadow-gray-900/20 active:scale-95 group"
+            >
+              <Save size={20} className="group-hover:scale-110 transition-transform" />
+              <span className="uppercase tracking-wide text-sm">Xác nhận & Lưu chứng từ</span>
+            </button>
           </div>
         </div>
       </div>
@@ -247,29 +371,62 @@ export default function ReviewQueue() {
   );
 }
 
-function FieldInput({ label, field, type = 'text', onChange }: { label: string, field: ExtractedField<any>, type?: string, onChange: (val: any) => void }) {
+function FieldInput({
+  label,
+  field,
+  type = 'text',
+  onChange,
+  isMainAmount = false
+}: {
+  label: string,
+  field: ExtractedField<any>,
+  type?: string,
+  onChange: (val: any) => void,
+  isMainAmount?: boolean
+}) {
   if (!field) field = { value: '', confidence: 'low' };
 
-  let confidenceClass = 'border-gray-200 focus:border-primary-500 focus:ring-primary-500/20 bg-gray-50 hover:bg-white';
-  
+  let statusStyles = 'border-gray-100 bg-gray-50/80 focus:bg-white focus:border-primary-500 focus:ring-primary-500/10';
+
   if (field.confidence === 'low') {
-    confidenceClass = 'border-red-300 bg-red-50/50 focus:border-red-500 focus:ring-red-500/20 hover:bg-red-50 font-medium text-red-900 shadow-sm shadow-red-100/50 mt-1';
+    statusStyles = 'border-red-200 bg-red-50/30 text-red-900 focus:border-red-500 focus:ring-red-500/10';
   } else if (field.confidence === 'medium') {
-    confidenceClass = 'border-orange-300 bg-orange-50/50 focus:border-orange-500 focus:ring-orange-500/20 hover:bg-orange-50 font-medium text-orange-900 shadow-sm shadow-orange-100/50 mt-1';
+    statusStyles = 'border-orange-200 bg-orange-50/30 text-orange-900 focus:border-orange-500 focus:ring-orange-500/10';
+  }
+
+  if (isMainAmount) {
+    statusStyles += ' font-black text-lg text-primary-700';
   }
 
   return (
-    <div className="relative group">
-      <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">{label}</label>
-      <input 
-        type={type}
-        value={field.value !== null ? field.value : ''}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full px-4 py-3 rounded-xl border outline-none focus:ring-4 transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] ${confidenceClass}`}
-      />
-      {field.confidence === 'low' && (
-         <span className="absolute right-3 top-9 flex w-2 h-2 rounded-full border border-white bg-red-500 animate-pulse"></span>
-      )}
+    <div className="relative space-y-2 group">
+      <div className="flex justify-between items-center px-1">
+        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</label>
+        {field.confidence !== 'high' && (
+          <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter ${field.confidence === 'low' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
+            Check {field.confidence}
+          </div>
+        )}
+      </div>
+      <div className="relative">
+        <input
+          type={type}
+          value={
+            field.value !== null &&
+              field.value !== undefined &&
+              !Number.isNaN(field.value)
+              ? field.value
+              : ''
+          }
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full px-4 py-3.5 rounded-2xl border-2 outline-none transition-all duration-300 ${statusStyles}`}
+        />
+        {field.confidence === 'low' && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center">
+            <AlertTriangle size={18} className="text-red-500" />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

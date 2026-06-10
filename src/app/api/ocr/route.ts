@@ -25,7 +25,15 @@ export async function POST(req: Request) {
       return Response.json({ error: "Không tìm thấy file tải lên" }, { status: 400 });
     }
 
-    const mimeType = file.type;
+    let mimeType = file.type;
+    if (!mimeType || mimeType === 'application/octet-stream') {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (ext === 'pdf') mimeType = 'application/pdf';
+      else if (ext === 'png') mimeType = 'image/png';
+      else if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+      else if (ext === 'webp') mimeType = 'image/webp';
+      else if (ext === 'heic') mimeType = 'image/heic';
+    }
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64Data = buffer.toString("base64");
@@ -145,9 +153,17 @@ Lưu ý:
         errorMessage = "Giới hạn lượt dùng thử miễn phí của API Gemini đã hết (Lỗi 429 - Quota Exceeded). Bạn vui lòng thay đổi API Key khác hoặc nâng cấp gói sử dụng nhé!";
       } else if (msg.includes("api key not valid") || msg.includes("invalid api key") || msg.includes("key invalid") || msg.includes("api_key_invalid") || msg.includes("api key invalid")) {
         errorMessage = "Khóa API Gemini (GEMINI_API_KEY) cấu hình trong file .env không hợp lệ hoặc đã bị khóa. Vui lòng kiểm tra và cập nhật lại!";
+      } else if (error.status === 503 || msg.includes("503") || msg.includes("unavailable") || msg.includes("high demand") || msg.includes("overloaded")) {
+        errorMessage = "Hệ thống AI hiện đang quá tải (Lỗi 503 - Máy chủ bận). Vui lòng đợi một lát và thử lại sau nhé!";
       } else {
         try {
-          const parsed = JSON.parse(error.message);
+          let jsonStr = error.message;
+          if (jsonStr.includes('Error [ApiError]:')) {
+            jsonStr = jsonStr.replace('Error [ApiError]:', '').trim();
+          } else if (jsonStr.startsWith('[ApiError]:')) {
+            jsonStr = jsonStr.replace('[ApiError]:', '').trim();
+          }
+          const parsed = JSON.parse(jsonStr);
           errorMessage = parsed.error?.message || error.message;
         } catch (e) {
           errorMessage = error.message;

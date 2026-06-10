@@ -18,6 +18,7 @@ import {
   Menu,
   LogOut,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import UploadSection from "../components/UploadSection";
 import ReviewQueue from "../components/ReviewQueue";
@@ -27,61 +28,96 @@ import HelpFAQ from "../components/HelpFAQ";
 import AuthScreen from "../components/AuthScreen";
 import { ToastContainer, toast } from "../components/Toast";
 
+import { checkDuplicates } from "../lib/utils";
+import DuplicateWarningModal from "../components/DuplicateWarningModal";
+
 function WelcomeModal({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0);
-  const { actions } = useAppStore();
+  const { state, actions } = useAppStore();
 
-  const handleUseDemo = () => {
-    actions.addInvoice({
-      id: crypto.randomUUID(),
-      status: "confirmed",
-      created_at: Date.now(),
-      needs_review: false,
-      is_demo: true,
-      invoice_date: { value: "15/05/2026", confidence: "high" },
-      invoice_number: { value: "HD-19028", confidence: "high" },
-      vendor_name: { value: "Công Ty Điện Lực Hà Nội", confidence: "high" },
-      vendor_tax_code: { value: "0100123456", confidence: "high" },
-      items: [
-        {
-          description: { value: "Tiền điện văn phòng T5", confidence: "high" },
-          quantity: { value: 1, confidence: "high" },
-          unit_price: { value: 1500000, confidence: "high" },
-          amount: { value: 1500000, confidence: "high" },
-        },
-      ],
-      subtotal: { value: 1500000, confidence: "high" },
-      vat_rate: { value: 10, confidence: "high" },
-      vat_amount: { value: 150000, confidence: "high" },
-      total: { value: 1650000, confidence: "high" },
-    });
-    actions.addInvoice({
-      id: crypto.randomUUID(),
-      status: "confirmed",
-      created_at: Date.now() - 86400000 * 2,
-      needs_review: false,
-      is_demo: true,
-      invoice_date: { value: "13/05/2026", confidence: "high" },
-      invoice_number: { value: "HD-88321", confidence: "high" },
-      vendor_name: { value: "CP Vật Tư Office", confidence: "high" },
-      vendor_tax_code: { value: "0310987654", confidence: "high" },
-      items: [
-        {
-          description: {
-            value: "Giấy in A4, bút, file càng cua",
-            confidence: "high",
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [pendingInvoice, setPendingInvoice] = useState<any | null>(null);
+  const [duplicates, setDuplicates] = useState<any[]>([]);
+  const [resolveDuplicate, setResolveDuplicate] = useState<((value: boolean) => void) | null>(null);
+
+  const handleUseDemo = async () => {
+    const demoInvoices = [
+      {
+        id: crypto.randomUUID(),
+        status: "confirmed",
+        created_at: Date.now(),
+        needs_review: false,
+        is_demo: true,
+        invoice_date: { value: "15/05/2026", confidence: "high" },
+        invoice_number: { value: "HD-19028", confidence: "high" },
+        vendor_name: { value: "Công Ty Điện Lực Hà Nội", confidence: "high" },
+        vendor_tax_code: { value: "0100123456", confidence: "high" },
+        items: [
+          {
+            description: { value: "Tiền điện văn phòng T5", confidence: "high" },
+            quantity: { value: 1, confidence: "high" },
+            unit_price: { value: 1500000, confidence: "high" },
+            amount: { value: 1500000, confidence: "high" },
           },
-          quantity: { value: 1, confidence: "high" },
-          unit_price: { value: 2000000, confidence: "high" },
-          amount: { value: 2000000, confidence: "high" },
-        },
-      ],
-      subtotal: { value: 2000000, confidence: "high" },
-      vat_rate: { value: 10, confidence: "high" },
-      vat_amount: { value: 200000, confidence: "high" },
-      total: { value: 2200000, confidence: "high" },
-    });
-    toast.success("Đã tải dữ liệu mẫu thành công!");
+        ],
+        subtotal: { value: 1500000, confidence: "high" },
+        vat_rate: { value: 10, confidence: "high" },
+        vat_amount: { value: 150000, confidence: "high" },
+        total: { value: 1650000, confidence: "high" },
+      },
+      {
+        id: crypto.randomUUID(),
+        status: "confirmed",
+        created_at: Date.now() - 86400000 * 2,
+        needs_review: false,
+        is_demo: true,
+        invoice_date: { value: "13/05/2026", confidence: "high" },
+        invoice_number: { value: "HD-88321", confidence: "high" },
+        vendor_name: { value: "CP Vật Tư Office", confidence: "high" },
+        vendor_tax_code: { value: "0310987654", confidence: "high" },
+        items: [
+          {
+            description: {
+              value: "Giấy in A4, bút, file càng cua",
+              confidence: "high",
+            },
+            quantity: { value: 1, confidence: "high" },
+            unit_price: { value: 2000000, confidence: "high" },
+            amount: { value: 2000000, confidence: "high" },
+          },
+        ],
+        subtotal: { value: 2000000, confidence: "high" },
+        vat_rate: { value: 10, confidence: "high" },
+        vat_amount: { value: 200000, confidence: "high" },
+        total: { value: 2200000, confidence: "high" },
+      }
+    ];
+
+    let addedCount = 0;
+    for (const inv of demoInvoices) {
+      const foundDuplicates = checkDuplicates(inv, state.invoices);
+      if (foundDuplicates.length > 0) {
+        setPendingInvoice(inv);
+        setDuplicates(foundDuplicates);
+        setShowDuplicateModal(true);
+        
+        const shouldAdd = await new Promise<boolean>((resolve) => {
+          setResolveDuplicate(() => resolve);
+        });
+
+        if (shouldAdd) {
+          await actions.addInvoice(inv as any);
+          addedCount++;
+        }
+      } else {
+        await actions.addInvoice(inv as any);
+        addedCount++;
+      }
+    }
+
+    if (addedCount > 0) {
+      toast.success(`Đã tải ${addedCount} hóa đơn mẫu thành công!`);
+    }
     onClose();
   };
 
@@ -160,16 +196,18 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
               Bắt đầu ngay <CheckCircle size={18} />
             </button>
           )}
-          {step === 0 && (
-            <button
-              onClick={handleUseDemo}
-              className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 rounded-xl py-3.5 font-semibold hover:bg-gray-50 transition-colors shadow-sm"
-            >
-              Dùng dữ liệu mẫu (Demo)
-            </button>
-          )}
         </div>
       </div>
+      {showDuplicateModal && pendingInvoice && (
+        <DuplicateWarningModal
+          pendingInvoice={pendingInvoice}
+          duplicates={duplicates}
+          onResolve={(shouldAdd) => {
+            if (resolveDuplicate) resolveDuplicate(shouldAdd);
+            setShowDuplicateModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -308,19 +346,11 @@ function AppContent() {
   ).length;
 
   useEffect(() => {
-    if (state.user) {
-      const isFirstVisit = !localStorage.getItem(
-        "accobot_onboarding_completed",
-      );
-      if (isFirstVisit) {
-        setShowWelcome(true);
-      }
-    }
+    // Welcome modal removed
   }, [state.user]);
 
   const handleCloseWelcome = () => {
-    localStorage.setItem("accobot_onboarding_completed", "true");
-    setShowWelcome(false);
+    // Welcome modal removed
   };
 
   const handleTabChange = (
@@ -455,15 +485,13 @@ function AppContent() {
             />
 
             <button
-              onClick={() => {
-                setShowDeleteConfirm(true);
-              }}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium cursor-pointer transition-all group text-red-400 hover:bg-white/5 hover:text-red-300 w-full text-left"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all group text-amber-400 hover:bg-amber-950/30 hover:text-amber-300 w-full text-left border border-amber-500/10 mt-1"
             >
-              <span className="group-hover:text-red-305">
-                <UserX size={16} />
+              <span className="group-hover:text-amber-300">
+                <Trash2 size={18} />
               </span>
-              Xóa dữ liệu mẫu
+              Xóa dữ liệu
             </button>
 
             <button
@@ -493,7 +521,7 @@ function AppContent() {
               <UploadSection onComplete={() => handleTabChange("review")} />
             )}
             {activeTab === "review" && <ReviewQueue />}
-            {activeTab === "table" && <InvoiceTable />}
+            {activeTab === "table" && <InvoiceTable onDeleteDemo={() => setShowDeleteConfirm(true)} />}
             {activeTab === "dashboard" && <DashboardStats />}
             {activeTab === "help" && <HelpFAQ />}
           </div>

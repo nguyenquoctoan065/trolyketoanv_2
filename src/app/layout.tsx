@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AppProvider } from '../store';
+import { OfflineSyncManager } from '../OfflineSyncManager';
+import OfflineQueue from '../components/OfflineQueue';
 
 export const metadata: Metadata = {
   title: 'AccoBot - Trợ lý kế toán AI',
@@ -13,7 +16,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi">
-      <body>{children}</body>
+      <body>
+        <AppProvider>
+          {children}
+          <OfflineSyncManager />
+          <OfflineQueue />
+        </AppProvider>
+      </body>
     </html>
   );
 }
