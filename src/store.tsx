@@ -1,3 +1,5 @@
+"use client";
+
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import { AppState, InvoiceData } from './types';
 import { supabase } from './lib/supabaseClient';
@@ -10,6 +12,7 @@ type Action =
   | { type: 'ADD_INVOICE'; payload: InvoiceData }
   | { type: 'UPDATE_INVOICE'; payload: InvoiceData }
   | { type: 'DELETE_INVOICE'; payload: string }
+  | { type: 'DELETE_ALL_INVOICES' }
   | { type: 'CLEAR_DEMO_INVOICES' }
   | { type: 'LOGOUT' };
 
@@ -41,6 +44,11 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         invoices: state.invoices.filter((inv) => inv.id !== action.payload),
       };
+    case 'DELETE_ALL_INVOICES':
+      return {
+        ...state,
+        invoices: [],
+      };
     case 'CLEAR_DEMO_INVOICES':
       return {
         ...state,
@@ -65,6 +73,7 @@ const AppContext = createContext<{
     addInvoice: (inv: InvoiceData) => Promise<void>;
     updateInvoice: (inv: InvoiceData) => Promise<void>;
     deleteInvoice: (id: string) => Promise<void>;
+    deleteAllInvoices: () => Promise<void>;
     clearDemoInvoices: () => Promise<void>;
     signOut: () => Promise<void>;
   };
@@ -221,6 +230,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (err: any) {
         console.error('Error deleting invoice from Supabase:', err);
         toast.error('Không thể xóa hóa đơn: ' + err.message);
+      }
+    },
+
+    deleteAllInvoices: async () => {
+      try {
+        const { error } = await supabase
+          .from('invoices')
+          .delete()
+          .eq('user_id', state.user?.id);
+
+        if (error) throw error;
+        dispatch({ type: 'DELETE_ALL_INVOICES' });
+        toast.success('Đã xóa tất cả dữ liệu hóa đơn.');
+      } catch (err: any) {
+        console.error('Error deleting all invoices from Supabase:', err);
+        toast.error('Không thể xóa dữ liệu: ' + err.message);
       }
     },
 
