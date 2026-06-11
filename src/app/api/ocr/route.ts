@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       return Response.json({ error: "Tải ảnh lên Cloudinary không thành công." }, { status: 500 });
     }
 
-    // 2. Run Gemini 2.5 Flash OCR
+    // 2. Run Gemini 3.5 Flash OCR
     const ai = new GoogleGenAI({ 
       apiKey: apiKey,
       httpOptions: { headers: { 'User-Agent': 'aistudio-build-vercel' } }
@@ -117,7 +117,7 @@ Lưu ý:
 - Các số tiền không nên có dấu phẩy hay ký tự tiền tệ, chỉ để số (Number).`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: [
         {
           inlineData: {

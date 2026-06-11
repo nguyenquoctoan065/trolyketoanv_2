@@ -70,6 +70,8 @@ export const checkDuplicates = (newInv: any, existingInvoices: InvoiceData[]) =>
   if (!invNum && !taxCode && !total) return [];
 
   return existingInvoices.filter(inv => {
+    if (inv.status === 'rejected') return false;
+
     const existingNum = getFieldString(inv.invoice_number);
     const existingTax = getFieldString(inv.vendor_tax_code);
     const existingName = getFieldString(inv.vendor_name);
