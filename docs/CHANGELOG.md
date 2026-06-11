@@ -1,8 +1,25 @@
 # Nhật ký Thay đổi (Changelog)
 
 Tất cả các sửa đổi, cải tiến lớn hay phát sinh trên dự án này đều sẽ được làm tài liệu liệt kê vào đây.
+## [Ngày 11/06/2026] - Cải tiến Quy trình Xử lý Hóa đơn & Sửa lỗi Đồng bộ
+### Sửa lỗi (Fixed)
+- **Lỗi hiển thị sau khi Bỏ qua Cảnh báo Trùng lặp**: Khắc phục tình trạng hóa đơn không lưu vào kho dữ liệu khi người dùng chọn "Vẫn thêm mới". Bổ sung gọi `actions.addInvoice` bên trong `DuplicateWarningModal` để đảm bảo lưu dữ liệu ngay lập tức. Cảnh báo trùng lặp hiện tại chỉ xuất hiện đúng lúc khi có hóa đơn trong kho khớp thông tin (chống nhầm lẫn).
+- **Lỗi quét ảnh hóa đơn chập chờn**: Đã hủy bỏ cơ chế Fallback (để tránh lỗi model not found trên SDK mới). Lỗi `429 - Quota Exceeded` hiện tại sẽ được bắt và hiển thị cảnh báo để người dùng chủ động nâng cấp gói, giữ nguyên các tính năng quét cũ.
+- **Lỗi "đã xóa hóa đơn nhưng vẫn báo trùng lặp"**: Thuật toán kiểm tra trùng lặp (`checkDuplicates`) đã được cập nhật để **bỏ qua các hóa đơn đã bị loại bỏ (rejected)**. Người dùng sẽ không bị báo trùng lặp "ảo" với các hóa đơn nằm trong thùng rác hoặc đã xóa khỏi kho.
+- **Lỗi "Vẫn thêm mới" không xuất hiện trong Kho**: Cập nhật hệ thống để khi ấn **"Vẫn thêm mới"** trong cảnh báo trùng lặp hoặc khi **Tạo hóa đơn mẫu**, hóa đơn sẽ được đặt trạng thái `confirmed` và **xuất hiện ngay lập tức trong Kho lưu trữ** thay vì bị ẩn ở mục Chờ duyệt.
+- **Lỗi HTTP 500 khi Đồng bộ Offline**: Giải quyết lỗi biên dịch và gọi API Gemini do mất MIME type của tệp khi khôi phục từ IndexedDB (trình duyệt gửi tệp dưới dạng `application/octet-stream`). Tích hợp bộ tự động nhận diện và suy luận MIME type dựa vào đuôi mở rộng của tệp cả ở client ([OfflineSyncManager.tsx](file:///c:/Users/ad/Documents/Word%20c%E1%BB%A7a%20thu%20h%E1%BA%A1/trolyketoanv_2/src/OfflineSyncManager.tsx), [useOfflineSync.ts](file:///c:/Users/ad/Documents/Word%20c%E1%BB%A7a%20thu%20h%E1%BA%A1/trolyketoanv_2/src/lib/useOfflineSync.ts)) và ở server API Route ([route.ts](file:///c:/Users/ad/Documents/Word%20c%E1%BB%A7a%20thu%20h%E1%BA%A1/trolyketoanv_2/src/app/api/ocr/route.ts)).
+- **Lỗi kiểm tra trùng lặp (Duplicate Detection)**: Sửa lại điều kiện kiểm tra hóa đơn trùng lặp, hóa đơn bị tính là trùng nếu "Số hóa đơn giống nhau VÀ (có chung Mã số thuế HOẶC chung Tên nhà cung cấp HOẶC chung Tổng tiền)". Cải thiện thuật toán trích xuất dữ liệu thông minh trong `utils.ts` để đọc và so khớp các giá trị dạng lồng ({value:...}) một cách an toàn. Tự động hiển thị thẻ [CẢNH BÁO TRÙNG LẶP] khi thực hiện quét offline.
+- **Lỗi quét hóa đơn khi vừa bật mạng**: Cải tiến quá trình đồng bộ tự động `OfflineSyncManager`, thêm độ trễ (delay 3 giây) sau khi bắt được sự kiện "online" để đảm bảo kết nối mạng đã thực sự ổn định trước khi gọi API, khắc phục tình trạng gọi lỗi HTTP 500 khi vừa bật wifi/4G. Tích hợp trực tiếp kiểm tra trùng lặp cho các hóa đơn đồng bộ ngầm.
 
----
+### Đã thêm (Added)
+- **Tính năng Chụp và Lưu Offline**: Cho phép người dùng tải lên hoặc chụp ảnh hóa đơn ngay cả khi không có kết nối mạng. Hóa đơn được lưu an toàn vào IndexedDB của trình duyệt.
+- **Tự động Đồng bộ (Auto-sync)**: Hệ thống tự động phát hiện khi có mạng trở lại và thực hiện OCR + Upload toàn bộ hóa đơn đang chờ trong hàng đợi.
+- **Widget Hàng đợi Offline (`OfflineQueue`)**: Một widget nhỏ góc màn hình hiển thị số lượng hóa đơn đang chờ đồng bộ, kèm modal chi tiết để quản lý (xem trạng thái, lỗi, xóa).
+- **Quản lý IndexedDB (`offlineDb.ts`)**: Sử dụng thư viện `idb` để quản lý cơ sở dữ liệu cục bộ `invoice-offline` hiệu quả.
+- **Trình quản lý Đồng bộ (`OfflineSyncManager.tsx`)**: Thành phần chạy ngầm xử lý việc đẩy dữ liệu lên server khi điều kiện mạng cho phép.
+
+### Thay đổi (Changed)
+- **Cải tiến `UploadSection`**: Tích hợp logic kiểm tra kết nối mạng. Nếu offline, tệp tin sẽ được chuyển hướng lưu vào bộ nhớ cục bộ thay vì gọi API.
 
 ## [Ngày 10/06/2026] - Chế độ Offline & Đồng bộ Tự động & Sửa lỗi Hệ thống
 ### Sửa lỗi (Fixed)
