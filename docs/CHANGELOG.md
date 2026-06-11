@@ -21,14 +21,6 @@ Tất cả các sửa đổi, cải tiến lớn hay phát sinh trên dự án n
 ### Thay đổi (Changed)
 - **Cải tiến `UploadSection`**: Tích hợp logic kiểm tra kết nối mạng. Nếu offline, tệp tin sẽ được chuyển hướng lưu vào bộ nhớ cục bộ thay vì gọi API.
 
----
-
-## [Ngày 09/06/2026] - Phát hiện trùng lặp, Biểu đồ Top 5 Nhà cung cấp & Cải tiến Toàn diện
-### Thay đổi (Changed)
-- **Logic lọc hóa đơn**: Tích hợp các hàm `parse`, `parseISO`, `isValid`, `isBefore`, `isAfter`, `startOfDay`, `endOfDay` từ `date-fns` để phân tích và so khớp chính xác ngày hóa đơn (hỗ trợ cả định dạng `dd/MM/yyyy` và `yyyy-MM-dd`) với khoảng thời gian đã chọn.
-
----
-
 ## [Ngày 10/06/2026] - Chụp và Lưu Offline, Tự động Đồng bộ hóa
 ### Đã thêm (Added)
 - **Tính năng chụp và lưu hóa đơn khi offline**: Tích hợp IndexedDB (thông qua thư viện `idb`) để lưu trữ ảnh và metadata hóa đơn khi không có kết nối mạng.
@@ -39,6 +31,9 @@ Tất cả các sửa đổi, cải tiến lớn hay phát sinh trên dự án n
 - **Khu vực Tải lên (`UploadSection.tsx`)**: Cập nhật luồng xử lý để tự động chuyển hướng lưu offline nếu phát hiện mất kết nối internet.
 - **Xuất báo cáo PDF**: Cập nhật hàm `handleExportPDF` để in thêm khoảng thời gian áp dụng bộ lọc lên tiêu đề báo cáo PDF và tự động căn chỉnh vị trí bảng (`startY: 56`) để tránh bị đè chữ.
 - **Nút xóa bộ lọc**: Cập nhật hành động "Xóa thiết lập bộ lọc" để xóa đồng thời cả `startDate` và `endDate` về rỗng.
+- ## [Ngày 09/06/2026] - Phát hiện trùng lặp, Biểu đồ Top 5 Nhà cung cấp & Cải tiến Toàn diện
+### Thay đổi (Changed)
+- **Logic lọc hóa đơn**: Tích hợp các hàm `parse`, `parseISO`, `isValid`, `isBefore`, `isAfter`, `startOfDay`, `endOfDay` từ `date-fns` để phân tích và so khớp chính xác ngày hóa đơn (hỗ trợ cả định dạng `dd/MM/yyyy` và `yyyy-MM-dd`) với khoảng thời gian đã chọn.
 ### Đã thêm (Added)
 - **Props startDate/endDate cho InvoiceTable**: Thêm kiểu interface `InvoiceTableProps` và cập nhật hàm khởi tạo component `InvoiceTable` hỗ trợ nhận hai props tùy chọn `startDate` và `endDate` để thiết lập khoảng thời gian mặc định/từ ngoài vào.
 - **Bộ chọn khoảng ngày inline (Inline Date Range Picker)**: Tích hợp thêm 2 trường chọn ngày ("Từ ngày" và "Đến ngày") trực tiếp vào phần bộ lọc nâng cao (`showFilters`) của component `InvoiceTable` mà không dùng thư viện ngoài.
