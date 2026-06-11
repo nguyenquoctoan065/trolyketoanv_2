@@ -84,6 +84,7 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
       notes: { value: '', confidence: 'high' },
       needs_review: false,
       is_demo: true,
+      status: 'confirmed',
     };
 
     const added = await handleDuplicateFlow(
@@ -125,7 +126,7 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
       original_file_url: fileUrl,
       original_file_name: fileName,
       created_at: Date.now(),
-      status: 'pending_review'
+      status: data.status || 'pending_review'
     });
     return true;
   };
@@ -398,10 +399,12 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
           pendingInvoice={pendingInvoice}
           duplicates={duplicates}
           onResolve={async (shouldAdd) => {
-            if (resolveDuplicate) resolveDuplicate(shouldAdd);
-            
             if (shouldAdd) {
               if (pendingInvoice) {
+                await actions.addInvoice({
+                  ...pendingInvoice,
+                  status: 'confirmed'
+                });
                 await logAudit(
                   pendingInvoice.id,
                   'added_despite_duplicate',
@@ -414,6 +417,7 @@ export default function UploadSection({ onComplete }: { onComplete: () => void }
               toast.success("Đã hủy bỏ tải lên hóa đơn trùng lặp.");
             }
 
+            if (resolveDuplicate) resolveDuplicate(shouldAdd);
             setShowDuplicateModal(false);
             setPendingInvoice(null);
             setDuplicates([]);
